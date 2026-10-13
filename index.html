@@ -1,0 +1,1770 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rent vs. Buy Financial Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        brand: {
+                            buy: '#10b981',     // Emerald 500
+                            buyLight: '#34d399',
+                            rent: '#6366f1',    // Indigo 500
+                            rentLight: '#818cf8',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom Range Slider Styling */
+        input[type=range] {
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+            cursor: pointer;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            height: 6px;
+            border-radius: 9999px;
+        }
+        .dark input[type=range]::-webkit-slider-runnable-track {
+            background: #334155;
+        }
+        html:not(.dark) input[type=range]::-webkit-slider-runnable-track {
+            background: #cbd5e1;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            margin-top: -5px;
+            background-color: #10b981;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+            transition: transform 0.15s ease, background-color 0.15s ease;
+        }
+        input[type=range].rent-slider::-webkit-slider-thumb {
+            background-color: #6366f1;
+        }
+        input[type=range].neutral-slider::-webkit-slider-thumb {
+            background-color: #0ea5e9;
+        }
+        input[type=range]:hover::-webkit-slider-thumb {
+            transform: scale(1.18);
+        }
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .dark ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        .dark ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 3px;
+        }
+        html:not(.dark) ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        html:not(.dark) ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+        /* Tooltip styling */
+        .tooltip-trigger:hover .tooltip-box {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+        .tooltip-box {
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(4px);
+            transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+            pointer-events: none;
+            z-index: 50;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans antialiased selection:bg-emerald-500/20 selection:text-emerald-400 transition-colors duration-200 min-h-screen flex flex-col">
+
+    <header class="sticky top-0 z-40 backdrop-blur-md bg-white/85 dark:bg-slate-900/85 border-b border-slate-200 dark:border-slate-800">
+        <div class="max-w-[1600px] mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
+            <!-- Brand Header -->
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-emerald-500/20">
+                    <i class="ph-bold ph-scales text-xl"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 class="text-base sm:text-lg font-bold tracking-tight">Rent vs. Buy <span class="text-emerald-500 dark:text-emerald-400">Pro</span></h1>
+                        <span class="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                            Wealth & Cash-Flow Engine
+                        </span>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Models amortization, itemizable tax deductions, HOA, & opportunity cost</p>
+                </div>
+            </div>
+
+            <!-- Preset Scenarios & Controls -->
+            <div class="flex items-center gap-2 flex-wrap">
+                <div class="flex items-center bg-slate-100 dark:bg-slate-800/90 p-1 rounded-xl border border-slate-200 dark:border-slate-700/70 text-xs">
+                    <span class="px-2.5 py-1 text-slate-500 dark:text-slate-400 font-medium hidden md:inline">Presets:</span>
+                    <button onclick="applyPreset('baseline')" id="preset-baseline" class="preset-btn px-2.5 py-1.5 rounded-lg font-medium transition-all bg-white dark:bg-slate-900 shadow-sm text-emerald-600 dark:text-emerald-400">
+                        Baseline 10-Yr
+                    </button>
+                    <button onclick="applyPreset('metro')" id="preset-metro" class="preset-btn px-2.5 py-1.5 rounded-lg font-medium transition-all text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white">
+                        High-Cost Condo
+                    </button>
+                    <button onclick="applyPreset('suburban')" id="preset-suburban" class="preset-btn px-2.5 py-1.5 rounded-lg font-medium transition-all text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white">
+                        Suburban Family
+                    </button>
+                    <button onclick="applyPreset('highrate')" id="preset-highrate" class="preset-btn px-2.5 py-1.5 rounded-lg font-medium transition-all text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white">
+                        High-Rate / Market Bull
+                    </button>
+                </div>
+
+                <button onclick="resetToDefaults()" title="Reset to Default Baseline" class="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition">
+                    <i class="ph ph-arrow-counter-clockwise text-base"></i>
+                </button>
+
+                <button onclick="toggleTheme()" id="themeToggleBtn" title="Toggle Dark/Light Mode" class="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition">
+                    <i class="ph ph-sun text-base hidden dark:inline"></i>
+                    <i class="ph ph-moon text-base inline dark:hidden"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-[1600px] w-full mx-auto px-4 sm:px-6 py-6 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+        <!-- LEFT SIDEBAR: INTERACTIVE INPUT CONTROLS (4 Columns on Desktop) -->
+        <aside class="lg:col-span-4 xl:col-span-4 space-y-4 lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto pr-0.5">
+
+            <!-- 1. TIMELINE HORIZON CARD -->
+            <div class="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200 dark:border-slate-800 shadow-sm">
+                <div class="flex items-center justify-between mb-2">
+                    <div class="flex items-center gap-2">
+                        <i class="ph-fill ph-clock-countdown text-sky-500 text-lg"></i>
+                        <label for="horizonYears" class="text-sm font-semibold">Analysis Timeline Horizon</label>
+                    </div>
+                    <div class="flex items-center gap-1 bg-sky-500/10 border border-sky-500/20 px-2.5 py-1 rounded-lg">
+                        <span id="horizonDisplay" class="font-mono font-bold text-sm text-sky-600 dark:text-sky-400">10</span>
+                        <span class="text-xs text-sky-600/80 dark:text-sky-400/80 font-medium">Years</span>
+                    </div>
+                </div>
+                <input type="range" id="horizonYears" min="1" max="30" step="1" value="10" class="w-full neutral-slider" oninput="syncInput('horizonYears', this.value)">
+                <div class="flex justify-between text-[11px] font-mono text-slate-400 mt-1">
+                    <span>1 Yr</span>
+                    <span>5 Yrs</span>
+                    <span class="text-sky-500 font-semibold">10 Yrs</span>
+                    <span>20 Yrs</span>
+                    <span>30 Yrs</span>
+                </div>
+            </div>
+
+            <!-- ACCORDION NAVIGATION TABS FOR ORGANIZED CONTROLS -->
+            <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+
+                <!-- SECTION A: HOME PURCHASE & MORTGAGE -->
+                <div class="border-b border-slate-200 dark:border-slate-800">
+                    <button onclick="toggleSection('sec-purchase')" class="w-full px-4 py-3.5 flex items-center justify-between bg-slate-50/60 dark:bg-slate-800/40 hover:bg-slate-100/70 dark:hover:bg-slate-800/70 transition text-left">
+                        <div class="flex items-center gap-2.5">
+                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                            <span class="font-semibold text-sm">1. Home Purchase & Mortgage</span>
+                        </div>
+                        <i id="icon-sec-purchase" class="ph ph-caret-up text-slate-400 transition-transform"></i>
+                    </button>
+                    <div id="sec-purchase" class="p-4 space-y-4">
+                        <!-- Home Price -->
+                        <div>
+                            <div class="flex justify-between items-center text-xs mb-1.5">
+                                <span class="text-slate-600 dark:text-slate-300 font-medium">Home Purchase Price</span>
+                                <div class="relative flex items-center">
+                                    <span class="absolute left-2.5 text-slate-400 font-mono text-xs">$</span>
+                                    <input type="number" id="homePriceNum" value="550000" min="50000" max="5000000" step="5000"
+                                        class="w-28 pl-6 pr-2 py-1 text-right font-mono text-xs font-semibold rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-emerald-500"
+                                        onchange="syncInput('homePrice', this.value)">
+                                </div>
+                            </div>
+                            <input type="range" id="homePrice" min="100000" max="2500000" step="10000" value="550000" class="w-full" oninput="syncInput('homePrice', this.value)">
+                        </div>
+
+                        <!-- Down Payment (% and $ Synced) -->
+                        <div>
+                            <div class="flex justify-between items-center text-xs mb-1.5">
+                                <span class="text-slate-600 dark:text-slate-300 font-medium flex items-center gap-1">
+                                    Down Payment
+                                    <span class="relative tooltip-trigger cursor-help text-slate-400 hover:text-slate-200">
+                                        <i class="ph ph-info"></i>
+                                        <span class="tooltip-box absolute left-0 bottom-6 w-60 p-2.5 bg-slate-800 text-white text-[11px] rounded-xl shadow-xl border border-slate-700 leading-relaxed">
+                                            If Down Payment is under 20%, Private Mortgage Insurance (PMI ~0.65%/yr) is automatically modeled until equity reaches 20%.
+                                        </span>
+                                    </span>
+                                </span>
+                                <div class="flex items-center gap-1.5">
+                                    <div class="relative flex items-center">
+                                        <span class="absolute left-2 text-slate-400 font-mono text-[11px]">$</span>
+                                        <input type="number" id="downPaymentDollar" value="110000" step="1000"
+                                            class="w-24 pl-5 pr-1.5 py-1 text-right font-mono text-xs font-semibold rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-emerald-500"
+                                            onchange="syncDownPaymentDollar(this.value)">
+                                    </div>
+                                    <div class="relative flex items-center">
+                                        <input type="number" id="downPaymentPctNum" value="20" min="0" max="90" step="1"
+                                            class="w-14 pl-2 pr-5 py-1 text-right font-mono text-xs font-semibold rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-emerald-500"
+                                            onchange="syncInput('downPaymentPct', this.value)">
+                                        <span class="absolute right-2 text-slate-400 font-mono text-[11px]">%</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <input type="range" id="downPaymentPct" min="0" max="60" step="1" value="20" class="w-full" oninput="syncInput('downPaymentPct', this.value)">
+                            <div id="pmiBadge" class="hidden mt-1.5 text-[11px] text-amber-500 dark:text-amber-400 flex items-center gap-1">
+                                <i class="ph-fill ph-warning-circle"></i>
+                                <span>Includes PMI (<span id="pmiAmountText">$0</span>/mo) until 20% loan-to-value reached</span>
+                            </div>
+                        </div>
+
+                        <!-- Mortgage Interest Rate -->
+                        <div>
+                            <div class="flex justify-between items-center text-xs mb-1.5">
+                                <span class="text-slate-600 dark:text-slate-300 font-medium">Mortgage Interest Rate</span>
+                                <div class="relative flex items-center">
+                                    <input type="number" id="mortgageRateNum" value="6.25" min="1" max="15" step="0.05"
+                                        class="w-20 pl-2 pr-6 py-1 text-right font-mono text-xs font-semibold rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-emerald-500"
+                                        onchange="syncInput('mortgageRate', this.value)">
+                                    <span class="absolute right-2 text-slate-400 font-mono text-xs">%</span>
+                                </div>
+                            </div>
+                            <input type="range" id="mortgageRate" min="2.0" max="11.0" step="0.05" value="6.25" class="w-full" oninput="syncInput('mortgageRate', this.value)">
+                        </div>
+
+                        <!-- Loan Term & Closing Costs -->
+                        <div class="grid grid-cols-3 gap-2.5 pt-1">
+                            <div>
+                                <label class="block text-[11px] text-slate-500 dark:text-slate-400 mb-1">Loan Term</label>
+                                <select id="loanTerm" onchange="runSimulation()" class="w-full px-2 py-1.5 font-mono text-xs font-semibold rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-emerald-500">
+                                    <option value="15">15 Years</option>
+                                    <option value="20">20 Years</option>
+                                    <option value="30" selected>30 Years</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] text-slate-500 dark:text-slate-400 mb-1">Buy Closing %</label>
+                                <div class="relative flex items-center">
+                                    <input type="number" id="buyClosingPct" value="3.0" min="0" max="10" step="0.25" onchange="runSimulation()"
+                                        class="w-full pl-2 pr-5 py-1.5 text-right font-mono text-xs font-semibold rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                                    <span class="absolute right-2 text-slate-400 font-mono text-[11px]">%</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] text-slate-500 dark:text-slate-400 mb-1">Sell Realtor %</label>
+                                <div class="relative flex items-center">
+                                    <input type="number" id="sellClosingPct" value="5.5" min="0" max="12" step="0.25" onchange="runSimulation()"
+                                        class="w-full pl-2 pr-5 py-1.5 text-right font-mono text-xs font-semibold rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                                    <span class="absolute right-2 text-slate-400 font-mono text-[11px]">%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTION B: ONGOING OWNERSHIP COSTS -->
+                <div class="border-b border-slate-200 dark:border-slate-800">
+                    <button onclick="toggleSection('sec-ownership')" class="w-full px-4 py-3.5 flex items-center justify-between bg-slate-50/60 dark:bg-slate-800/40 hover:bg-slate-100/70 dark:hover:bg-slate-800/70 transition text-left">
+                        <div class="flex items-center gap-2.5">
+                            <span class="w-2.5 h-2.5 rounded-full bg-teal-500"></span>
+                            <span class="font-semibold text-sm">2. HOA, Property Tax & Maintenance</span>
+                        </div>
+                        <i id="icon-sec-ownership" class="ph ph-caret-up text-slate-400 transition-transform"></i>
+                    </button>
+                    <div id="sec-ownership" class="p-4 space-y-4">
+                        <!-- HOA / Condo Fees -->
+                        <div>
+                            <div class="flex justify-between items-center text-xs mb-1.5">
+                                <span class="text-slate-600 dark:text-slate-300 font-medium">HOA / Condo Fees (Monthly)</span>
+                                <div class="relative flex items-center">
+                                    <span class="absolute left-2 text-slate-400 font-mono text-xs">$</span>
+                                    <input type="number" id="hoaMonthlyNum" value="250" min="0" max="5000" step="25"
+                                        class="w-24 pl-5 pr-6 py-1 text-right font-mono text-xs font-semibold rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
+                                        onchange="syncInput('hoaMonthly', this.value)">
+                                    <span class="absolute right-1.5 text-slate-400 font-mono text-[10px]">/m</span>
+                                </div>
+                            </div>
+                            <input type="range" id="hoaMonthly" min="0" max="2000" step="25" value="250" class="w-full" oninput="syncInput('hoaMonthly', this.value)">
+                        </div>
+
+                        <!-- Property Tax Rate -->
+                        <div>
+                            <div class="flex justify-between items-center text-xs mb-1.5">
+                                <span class="text-slate-600 dark:text-slate-300 font-medium">Property Tax Rate (Annual)</span>
+                                <div class="relative flex items-center">
+                                    <input type="number" id="propTaxRateNum" value="1.25" min="0" max="5" step="0.05"
+                                        class="w-20 pl-2 pr-6 py-1 text-right font-mono text-xs font-semibold rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
+                                        onchange="syncInput('propTaxRate', this.value)">
+                                    <span class="absolute right-2 text-slate-400 font-mono text-xs">%</span>
+                                </div>
+                            </div>
+                            <input type="range" id="propTaxRate" min="0.2" max="3.5" step="0.05" value="1.25" class="w-full" oninput="syncInput('propTaxRate', this.value)">
+                        </div>
+
+                        <!-- Home Appreciation Rate -->
+                        <div>
+                            <div class="flex justify-between items-center text-xs mb-1.5">
+                                <span class="text-slate-600 dark:text-slate-300 font-medium">Home Appreciation Rate (Annual)</span>
+                                <div class="relative flex items-center">
+                                    <input type="number" id="homeAppreciationNum" value="3.8" min="-5" max="15" step="0.1"
+                                        class="w-20 pl-2 pr-6 py-1 text-right font-mono text-xs font-semibold rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
+                                        onchange="syncInput('homeAppreciation', this.value)">
+                                    <span class="absolute right-2 text-slate-400 font-mono text-xs">%</span>
+                                </div>
+                            </div>
+                            <input type="range" id="homeAppreciation" min="0.0" max="10.0" step="0.1" value="3.8" class="w-full" oninput="syncInput('homeAppreciation', this.value)">
+                        </div>
+
+                        <!-- Maintenance % & Home Insurance $ -->
+                        <div class="grid grid-cols-2 gap-3 pt-1">
+                            <div>
+                                <label class="block text-[11px] text-slate-500 dark:text-slate-400 mb-1">Maintenance (%/yr)</label>
+                                <div class="relative flex items-center">
+                                    <input type="number" id="maintenancePct" value="1.0" min="0" max="5" step="0.1" onchange="runSimulation()"
+                                        class="w-full pl-2.5 pr-6 py-1.5 text-right font-mono text-xs font-semibold rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                                    <span class="absolute right-2 text-slate-400 font-mono text-xs">%</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] text-slate-500 dark:text-slate-400 mb-1">Home Insurance ($/yr)</label>
+                                <div class="relative flex items-center">
+                                    <span class="absolute left-2.5 text-slate-400 font-mono text-xs">$</span>
+                                    <input type="number" id="homeInsuranceAnnual" value="1800" min="0" max="20000" step="100" onchange="runSimulation()"
+                                        class="w-full pl-6 pr-2.5 py-1.5 text-right font-mono text-xs font-semibold rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTION C: TAX DEDUCTION SETTINGS -->
+                <div class="border-b border-slate-200 dark:border-slate-800">
+                    <button onclick="toggleSection('sec-tax')" class="w-full px-4 py-3.5 flex items-center justify-between bg-slate-50/60 dark:bg-slate-800/40 hover:bg-slate-100/70 dark:hover:bg-slate-800/70 transition text-left">
+                        <div class="flex items-center gap-2.5">
+                            <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                            <span class="font-semibold text-sm">3. Tax Deductions & SALT Cap</span>
+                        </div>
+                        <i id="icon-sec-tax" class="ph ph-caret-up text-slate-400 transition-transform"></i>
+                    </button>
+                    <div id="sec-tax" class="p-4 space-y-3.5">
+                        <!-- Filing Status & Marginal Rate -->
+                        <div class="grid grid-cols-2 gap-2.5">
+                            <div>
+                                <label class="block text-[11px] text-slate-500 dark:text-slate-400 mb-1">Filing Status (Std Ded.)</label>
+                                <select id="filingStatus" onchange="handleFilingStatusChange()" class="w-full px-2 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                                    <option value="single" selected>Single ($15,000)</option>
+                                    <option value="married">Married Joint ($30,000)</option>
+                                    <option value="none">Full Itemize ($0 Hurdle)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] text-slate-500 dark:text-slate-400 mb-1">Marginal Income Tax</label>
+                                <div class="relative flex items-center">
+                                    <input type="number" id="marginalTaxRate" value="28" min="0" max="50" step="1" onchange="runSimulation()"
+                                        class="w-full pl-2.5 pr-6 py-1.5 text-right font-mono text-xs font-semibold rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                                    <span class="absolute right-2 text-slate-400 font-mono text-xs">%</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Other State/Local Income Taxes + SALT Cap Toggle -->
+                        <div class="grid grid-cols-2 gap-2.5">
+                            <div>
+                                <label class="block text-[11px] text-slate-500 dark:text-slate-400 mb-1 flex items-center gap-1">
+                                    Other SALT Taxes ($/yr)
+                                    <span class="relative tooltip-trigger cursor-help text-slate-400">
+                                        <i class="ph ph-info"></i>
+                                        <span class="tooltip-box absolute left-0 bottom-5 w-56 p-2 bg-slate-800 text-white text-[11px] rounded-xl shadow-xl border border-slate-700">
+                                            State income taxes already paid. Helps pass the Standard Deduction hurdle, or fills up the $10k SALT cap.
+                                        </span>
+                                    </span>
+                                </label>
+                                <div class="relative flex items-center">
+                                    <span class="absolute left-2.5 text-slate-400 font-mono text-xs">$</span>
+                                    <input type="number" id="otherSaltAnnual" value="6000" min="0" max="50000" step="500" onchange="runSimulation()"
+                                        class="w-full pl-6 pr-2 py-1.5 text-right font-mono text-xs font-semibold rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] text-slate-500 dark:text-slate-400 mb-1">SALT Deduction Cap</label>
+                                <select id="saltCapLimit" onchange="runSimulation()" class="w-full px-2 py-1.5 font-mono text-xs font-semibold rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                                    <option value="10000" selected>$10,000 Cap</option>
+                                    <option value="20000">$20,000 Cap</option>
+                                    <option value="999999">Uncapped SALT</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Live Year-1 Tax Savings Callout -->
+                        <div class="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-between text-xs">
+                            <span class="text-slate-600 dark:text-slate-300 flex items-center gap-1.5">
+                                <i class="ph-fill ph-receipt text-amber-500"></i>
+                                Year 1 Net Tax Shield:
+                            </span>
+                            <span id="yr1TaxSavingsBadge" class="font-mono font-bold text-amber-600 dark:text-amber-400">$2,680 / yr</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTION D: RENTING & INVESTMENTS -->
+                <div>
+                    <button onclick="toggleSection('sec-rent')" class="w-full px-4 py-3.5 flex items-center justify-between bg-slate-50/60 dark:bg-slate-800/40 hover:bg-slate-100/70 dark:hover:bg-slate-800/70 transition text-left">
+                        <div class="flex items-center gap-2.5">
+                            <span class="w-2.5 h-2.5 rounded-full bg-indigo-500"></span>
+                            <span class="font-semibold text-sm">4. Renting & Investment Returns</span>
+                        </div>
+                        <i id="icon-sec-rent" class="ph ph-caret-up text-slate-400 transition-transform"></i>
+                    </button>
+                    <div id="sec-rent" class="p-4 space-y-4">
+                        <!-- Initial Monthly Rent -->
+                        <div>
+                            <div class="flex justify-between items-center text-xs mb-1.5">
+                                <span class="text-slate-600 dark:text-slate-300 font-medium">Initial Monthly Rent</span>
+                                <div class="relative flex items-center">
+                                    <span class="absolute left-2.5 text-slate-400 font-mono text-xs">$</span>
+                                    <input type="number" id="monthlyRentNum" value="2750" min="300" max="25000" step="50"
+                                        class="w-24 pl-6 pr-2 py-1 text-right font-mono text-xs font-semibold rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
+                                        onchange="syncInput('monthlyRent', this.value)">
+                                </div>
+                            </div>
+                            <input type="range" id="monthlyRent" min="500" max="10000" step="50" value="2750" class="w-full rent-slider" oninput="syncInput('monthlyRent', this.value)">
+                        </div>
+
+                        <!-- Annual Rent Increase -->
+                        <div>
+                            <div class="flex justify-between items-center text-xs mb-1.5">
+                                <span class="text-slate-600 dark:text-slate-300 font-medium">Annual Rent Growth Rate</span>
+                                <div class="relative flex items-center">
+                                    <input type="number" id="rentGrowthNum" value="3.5" min="0" max="15" step="0.1"
+                                        class="w-20 pl-2 pr-6 py-1 text-right font-mono text-xs font-semibold rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
+                                        onchange="syncInput('rentGrowth', this.value)">
+                                    <span class="absolute right-2 text-slate-400 font-mono text-xs">%</span>
+                                </div>
+                            </div>
+                            <input type="range" id="rentGrowth" min="0.0" max="10.0" step="0.1" value="3.5" class="w-full rent-slider" oninput="syncInput('rentGrowth', this.value)">
+                        </div>
+
+                        <!-- Investment Return Rate (Opportunity Cost) -->
+                        <div>
+                            <div class="flex justify-between items-center text-xs mb-1.5">
+                                <span class="text-slate-600 dark:text-slate-300 font-medium flex items-center gap-1">
+                                    Portfolio Return Rate
+                                    <span class="relative tooltip-trigger cursor-help text-slate-400">
+                                        <i class="ph ph-info"></i>
+                                        <span class="tooltip-box absolute left-0 bottom-5 w-60 p-2.5 bg-slate-800 text-white text-[11px] rounded-xl shadow-xl border border-slate-700 leading-relaxed">
+                                            The Renter invests the avoided Down Payment + Buying Closing Costs on Day 1, and whoever pays less each month invests the monthly cash-flow difference at this rate.
+                                        </span>
+                                    </span>
+                                </span>
+                                <div class="relative flex items-center">
+                                    <input type="number" id="investReturnNum" value="7.5" min="0" max="20" step="0.1"
+                                        class="w-20 pl-2 pr-6 py-1 text-right font-mono text-xs font-semibold rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
+                                        onchange="syncInput('investReturn', this.value)">
+                                    <span class="absolute right-2 text-slate-400 font-mono text-xs">%</span>
+                                </div>
+                            </div>
+                            <input type="range" id="investReturn" min="0.0" max="15.0" step="0.1" value="7.5" class="w-full rent-slider" oninput="syncInput('investReturn', this.value)">
+                        </div>
+
+                        <!-- Renter's Insurance & Capital Gains Tax -->
+                        <div class="grid grid-cols-2 gap-3 pt-1">
+                            <div>
+                                <label class="block text-[11px] text-slate-500 dark:text-slate-400 mb-1">Renter Insurance ($/mo)</label>
+                                <div class="relative flex items-center">
+                                    <span class="absolute left-2.5 text-slate-400 font-mono text-xs">$</span>
+                                    <input type="number" id="renterInsuranceMo" value="25" min="0" max="500" step="5" onchange="runSimulation()"
+                                        class="w-full pl-6 pr-2.5 py-1.5 text-right font-mono text-xs font-semibold rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] text-slate-500 dark:text-slate-400 mb-1">Cap. Gains Tax Rate</label>
+                                <div class="relative flex items-center">
+                                    <input type="number" id="capGainsTaxRate" value="15" min="0" max="40" step="1" onchange="runSimulation()"
+                                        class="w-full pl-2.5 pr-6 py-1.5 text-right font-mono text-xs font-semibold rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                                    <span class="absolute right-2 text-slate-400 font-mono text-xs">%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </aside>
+
+        <!-- RIGHT MAIN PANEL: VISUALIZATIONS, SUMMARY & TABLE (8 Columns on Desktop) -->
+        <section class="lg:col-span-8 xl:col-span-8 space-y-6">
+
+            <!-- HERO VERDICT SUMMARY BANNER -->
+            <div id="heroBanner" class="relative overflow-hidden rounded-2xl p-5 sm:p-6 border border-emerald-500/30 bg-gradient-to-br from-emerald-500/10 via-slate-900/5 to-indigo-500/10 dark:from-emerald-950/50 dark:via-slate-900 dark:to-indigo-950/40 shadow-sm">
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-5 items-center">
+                    <!-- Main Verdict Text -->
+                    <div class="md:col-span-7 space-y-2">
+                        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 border border-emerald-500/30" id="verdictPill">
+                            <i class="ph-fill ph-SealCheck"></i>
+                            <span id="verdictPillText">10-Year Financial Verdict</span>
+                        </div>
+                        <h2 id="verdictHeadline" class="text-2xl sm:text-3xl font-extrabold tracking-tight leading-tight">
+                            Buying builds <span class="text-emerald-500">$68,420</span> more net wealth after 10 years
+                        </h2>
+                        <p id="verdictSubtext" class="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+                            After accounting for Realtor selling fees, capital gains taxes, and investing monthly cash-flow differences.
+                        </p>
+                    </div>
+
+                    <!-- Key Highlight Metrics (Breakeven + Monthly Cash Flow) -->
+                    <div class="md:col-span-5 grid grid-cols-2 gap-3">
+                        <!-- Breakeven Indicator -->
+                        <div class="p-3.5 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 backdrop-blur-sm">
+                            <div class="text-[11px] font-medium text-slate-500 dark:text-slate-400 flex items-center justify-between">
+                                <span>Breakeven Horizon</span>
+                                <i class="ph-bold ph-crosshair text-sky-500"></i>
+                            </div>
+                            <div id="breakevenValue" class="text-lg sm:text-xl font-mono font-bold mt-1 text-slate-900 dark:text-white">
+                                Year 5.4
+                            </div>
+                            <div id="breakevenNote" class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                                Buying surpasses renting
+                            </div>
+                        </div>
+
+                        <!-- Initial Monthly Outflow Comparison -->
+                        <div class="p-3.5 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 backdrop-blur-sm">
+                            <div class="text-[11px] font-medium text-slate-500 dark:text-slate-400 flex items-center justify-between">
+                                <span>Yr 1 Net Monthly Cost</span>
+                                <i class="ph-bold ph-arrows-left-right text-indigo-500"></i>
+                            </div>
+                            <div class="mt-1 flex items-baseline gap-1.5 font-mono">
+                                <span id="yr1BuyMo" class="text-sm sm:text-base font-bold text-emerald-600 dark:text-emerald-400">$3,790</span>
+                                <span class="text-[10px] text-slate-400">vs</span>
+                                <span id="yr1RentMo" class="text-sm sm:text-base font-bold text-indigo-600 dark:text-indigo-400">$2,775</span>
+                            </div>
+                            <div id="yr1DiffNote" class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                                Buy costs $1,015/mo more initially
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4 Summary KPI Strip -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-5 pt-4 border-t border-slate-200/70 dark:border-slate-800/80">
+                    <div>
+                        <div class="text-[11px] text-slate-500 dark:text-slate-400">Buyer Final Net Wealth</div>
+                        <div id="kpiBuyerWealth" class="text-base sm:text-lg font-mono font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">$412,500</div>
+                        <div id="kpiBuyerWealthSub" class="text-[11px] text-slate-500 font-mono">Home Eq + Side Inv</div>
+                    </div>
+                    <div>
+                        <div class="text-[11px] text-slate-500 dark:text-slate-400">Renter Final Net Wealth</div>
+                        <div id="kpiRenterWealth" class="text-base sm:text-lg font-mono font-bold text-indigo-600 dark:text-indigo-400 mt-0.5">$344,080</div>
+                        <div id="kpiRenterWealthSub" class="text-[11px] text-slate-500 font-mono">After Cap Gains Tax</div>
+                    </div>
+                    <div>
+                        <div class="text-[11px] text-slate-500 dark:text-slate-400">Buyer Unrecoverable Sunk</div>
+                        <div id="kpiBuyerSunk" class="text-base sm:text-lg font-mono font-bold text-slate-800 dark:text-slate-200 mt-0.5">$378,200</div>
+                        <div id="kpiBuyerSunkSub" class="text-[11px] text-slate-500 font-mono">Int, Tax, HOA, Fees - Shield</div>
+                    </div>
+                    <div>
+                        <div class="text-[11px] text-slate-500 dark:text-slate-400">Renter Unrecoverable Sunk</div>
+                        <div id="kpiRenterSunk" class="text-base sm:text-lg font-mono font-bold text-slate-800 dark:text-slate-200 mt-0.5">$391,400</div>
+                        <div class="text-[11px] text-slate-500 font-mono">Total Rent + Renter Ins.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CHARTS GRID: CHART 1 (NET WEALTH) & CHART 2 (SUNK COSTS) -->
+            <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+
+                <!-- CHART 1: NET WORTH / CUMULATIVE WEALTH OVER TIME -->
+                <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col">
+                    <div class="flex items-start justify-between gap-2 mb-4">
+                        <div>
+                            <h3 class="text-sm font-bold flex items-center gap-2">
+                                <i class="ph-fill ph-trend-up text-emerald-500"></i>
+                                Net Wealth Trajectory Over Time
+                            </h3>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">Net liquidated home equity + side portfolio vs. Renter's investment portfolio</p>
+                        </div>
+                        <div class="flex items-center gap-3 text-xs font-medium shrink-0">
+                            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>Buyer</span>
+                            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-indigo-500"></span>Renter</span>
+                        </div>
+                    </div>
+                    <div class="relative flex-1 min-h-[260px] w-full">
+                        <canvas id="wealthChartCanvas" class="w-full h-full block"></canvas>
+                        <div id="wealthTooltip" class="hidden absolute pointer-events-none z-20 bg-slate-900/95 text-white p-3 rounded-xl border border-slate-700 shadow-xl text-xs font-mono"></div>
+                    </div>
+                </div>
+
+                <!-- CHART 2: CUMULATIVE UNRECOVERABLE ("SUNK") COSTS -->
+                <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col">
+                    <div class="flex items-start justify-between gap-2 mb-4">
+                        <div>
+                            <h3 class="text-sm font-bold flex items-center gap-2">
+                                <i class="ph-fill ph-fire text-rose-500"></i>
+                                Cumulative Unrecoverable ("Sunk") Costs
+                            </h3>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">Interest, taxes, HOA, maintenance & closing minus tax shield vs. Rent paid</p>
+                        </div>
+                        <div class="flex items-center gap-3 text-xs font-medium shrink-0">
+                            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>Buy Sunk</span>
+                            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-indigo-500"></span>Rent Sunk</span>
+                        </div>
+                    </div>
+                    <div class="relative flex-1 min-h-[260px] w-full">
+                        <canvas id="sunkChartCanvas" class="w-full h-full block"></canvas>
+                        <div id="sunkTooltip" class="hidden absolute pointer-events-none z-20 bg-slate-900/95 text-white p-3 rounded-xl border border-slate-700 shadow-xl text-xs font-mono"></div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- CHART 3: COST BREAKDOWN & WEALTH RETENTION BAR COMPARISON -->
+            <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm">
+                <div class="flex flex-wrap items-center justify-between gap-2 mb-5">
+                    <div>
+                        <h3 class="text-sm font-bold flex items-center gap-2">
+                            <i class="ph-fill ph-chart-pie-slice text-sky-500"></i>
+                            <span id="breakdownTitle">10-Year Total Cash Outflows vs. Final Wealth Retained</span>
+                        </h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Every dollar spent categorized into sunk unrecoverable costs vs. retained net equity</p>
+                    </div>
+                    <div class="text-xs font-mono text-slate-500 dark:text-slate-400" id="taxSummaryNote">
+                        Cumulative Tax Deduction Savings: <span class="text-amber-500 font-semibold">$24,500</span>
+                    </div>
+                </div>
+
+                <!-- Stacked Horizontal Bar Comparison & Legend -->
+                <div class="space-y-5">
+                    <!-- Buyer Stacked Bar -->
+                    <div>
+                        <div class="flex justify-between text-xs font-medium mb-1.5">
+                            <span class="font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+                                <i class="ph-fill ph-house-line"></i> Buying Breakdown
+                            </span>
+                            <span id="buyerTotalOutflowLabel" class="font-mono text-slate-600 dark:text-slate-300">Total Outflow: $595,000</span>
+                        </div>
+                        <div id="buyerStackedBar" class="w-full h-7 rounded-xl overflow-hidden flex bg-slate-100 dark:bg-slate-800 p-0.5 gap-0.5">
+                            <!-- Dynamically populated segments -->
+                        </div>
+                        <div id="buyerLegendGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 mt-2.5 text-[11px]">
+                            <!-- Dynamically populated legend -->
+                        </div>
+                    </div>
+
+                    <!-- Renter Stacked Bar -->
+                    <div class="pt-3 border-t border-slate-100 dark:border-slate-800/80">
+                        <div class="flex justify-between text-xs font-medium mb-1.5">
+                            <span class="font-semibold text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5">
+                                <i class="ph-fill ph-buildings"></i> Renting + Investing Breakdown
+                            </span>
+                            <span id="renterTotalOutflowLabel" class="font-mono text-slate-600 dark:text-slate-300">Total Outflow + Invested: $595,000</span>
+                        </div>
+                        <div id="renterStackedBar" class="w-full h-7 rounded-xl overflow-hidden flex bg-slate-100 dark:bg-slate-800 p-0.5 gap-0.5">
+                            <!-- Dynamically populated segments -->
+                        </div>
+                        <div id="renterLegendGrid" class="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2.5 text-[11px]">
+                            <!-- Dynamically populated legend -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- YEAR-BY-YEAR AMORTIZATION & CASH FLOW SCHEDULE TABLE -->
+            <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                <div class="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                        <h3 class="text-sm font-bold flex items-center gap-2">
+                            <i class="ph-fill ph-table text-emerald-500"></i>
+                            Year-by-Year Amortization, Tax Shield & Wealth Ledger
+                        </h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Click any year row to inspect detailed monthly P&I, HOA, tax itemization, and selling costs</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button onclick="exportCSV()" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 flex items-center gap-1.5 transition">
+                            <i class="ph ph-download-simple"></i> Export CSV
+                        </button>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-slate-200 dark:border-slate-800 text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 bg-slate-50/70 dark:bg-slate-800/50">
+                                <th class="py-3 px-3">Year</th>
+                                <th class="py-3 px-3 text-right">Home Value</th>
+                                <th class="py-3 px-3 text-right">Loan Balance</th>
+                                <th class="py-3 px-3 text-right">Net Home Equity</th>
+                                <th class="py-3 px-3 text-right">Buy Outflow/Yr</th>
+                                <th class="py-3 px-3 text-right">Tax Shield</th>
+                                <th class="py-3 px-3 text-right">Rent Outflow/Yr</th>
+                                <th class="py-3 px-3 text-right">Renter Portfolio</th>
+                                <th class="py-3 px-3 text-right">Net Advantage</th>
+                            </tr>
+                        </thead>
+                        <tbody id="amortizationTableBody" class="divide-y divide-slate-200/60 dark:divide-slate-800/70 text-xs font-mono">
+                            <!-- Populated dynamically via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </section>
+    </main>
+
+    <script>
+        // ============================================================================
+        // PRESET SCENARIOS CONFIGURATION
+        // ============================================================================
+        const PRESETS = {
+            baseline: {
+                horizonYears: 10,
+                homePrice: 550000,
+                downPaymentPct: 20,
+                mortgageRate: 6.25,
+                loanTerm: 30,
+                buyClosingPct: 3.0,
+                sellClosingPct: 5.5,
+                hoaMonthly: 250,
+                propTaxRate: 1.25,
+                homeAppreciation: 3.8,
+                maintenancePct: 1.0,
+                homeInsuranceAnnual: 1800,
+                filingStatus: 'single',
+                marginalTaxRate: 28,
+                otherSaltAnnual: 6000,
+                saltCapLimit: 10000,
+                monthlyRent: 2750,
+                rentGrowth: 3.5,
+                investReturn: 7.5,
+                renterInsuranceMo: 25,
+                capGainsTaxRate: 15
+            },
+            metro: {
+                horizonYears: 10,
+                homePrice: 950000,
+                downPaymentPct: 20,
+                mortgageRate: 6.50,
+                loanTerm: 30,
+                buyClosingPct: 3.5,
+                sellClosingPct: 5.5,
+                hoaMonthly: 850,
+                propTaxRate: 1.15,
+                homeAppreciation: 3.5,
+                maintenancePct: 0.6,
+                homeInsuranceAnnual: 1600,
+                filingStatus: 'single',
+                marginalTaxRate: 35,
+                otherSaltAnnual: 12000,
+                saltCapLimit: 10000,
+                monthlyRent: 3900,
+                rentGrowth: 3.5,
+                investReturn: 8.0,
+                renterInsuranceMo: 30,
+                capGainsTaxRate: 15
+            },
+            suburban: {
+                horizonYears: 10,
+                homePrice: 440000,
+                downPaymentPct: 20,
+                mortgageRate: 5.95,
+                loanTerm: 30,
+                buyClosingPct: 2.5,
+                sellClosingPct: 5.5,
+                hoaMonthly: 65,
+                propTaxRate: 1.65,
+                homeAppreciation: 4.2,
+                maintenancePct: 1.2,
+                homeInsuranceAnnual: 2100,
+                filingStatus: 'married',
+                marginalTaxRate: 24,
+                otherSaltAnnual: 7500,
+                saltCapLimit: 10000,
+                monthlyRent: 2650,
+                rentGrowth: 4.0,
+                investReturn: 7.0,
+                renterInsuranceMo: 25,
+                capGainsTaxRate: 15
+            },
+            highrate: {
+                horizonYears: 10,
+                homePrice: 650000,
+                downPaymentPct: 15,
+                mortgageRate: 7.50,
+                loanTerm: 30,
+                buyClosingPct: 3.0,
+                sellClosingPct: 6.0,
+                hoaMonthly: 350,
+                propTaxRate: 1.40,
+                homeAppreciation: 3.0,
+                maintenancePct: 1.1,
+                homeInsuranceAnnual: 2000,
+                filingStatus: 'single',
+                marginalTaxRate: 32,
+                otherSaltAnnual: 8000,
+                saltCapLimit: 10000,
+                monthlyRent: 2800,
+                rentGrowth: 3.2,
+                investReturn: 9.2,
+                renterInsuranceMo: 25,
+                capGainsTaxRate: 15
+            }
+        };
+
+        // Global state holding latest simulation results for charts & table
+        let latestSim = null;
+        let expandedYears = new Set();
+
+        // Formatters
+        const fmtCurrency = (val) => {
+            const absVal = Math.abs(Math.round(val));
+            const formatted = '$' + absVal.toLocaleString('en-US');
+            return val < 0 ? '-' + formatted : formatted;
+        };
+
+        const fmtCompact = (val) => {
+            const abs = Math.abs(val);
+            const sign = val < 0 ? '-' : '';
+            if (abs >= 1000000) return sign + '$' + (abs / 1000000).toFixed(2) + 'M';
+            if (abs >= 1000) return sign + '$' + Math.round(abs / 1000) + 'k';
+            return sign + '$' + Math.round(abs);
+        };
+
+        // ============================================================================
+        // INPUT SYNCHRONIZATION & UI HELPERS
+        // ============================================================================
+        function syncInput(id, val) {
+            const numVal = parseFloat(val);
+            if (isNaN(numVal)) return;
+
+            const rangeEl = document.getElementById(id);
+            const numEl = document.getElementById(id + 'Num');
+            if (rangeEl) rangeEl.value = numVal;
+            if (numEl) numEl.value = numVal;
+
+            if (id === 'horizonYears') {
+                document.getElementById('horizonDisplay').textContent = numVal;
+            }
+            if (id === 'homePrice' || id === 'downPaymentPct') {
+                const hp = parseFloat(document.getElementById('homePriceNum').value) || 0;
+                const dpPct = parseFloat(document.getElementById('downPaymentPctNum').value) || 0;
+                document.getElementById('downPaymentDollar').value = Math.round(hp * (dpPct / 100));
+            }
+            runSimulation();
+        }
+
+        function syncDownPaymentDollar(dollarVal) {
+            const hp = parseFloat(document.getElementById('homePriceNum').value) || 1;
+            const dVal = Math.max(0, Math.min(hp * 0.9, parseFloat(dollarVal) || 0));
+            const pct = Math.round((dVal / hp) * 1000) / 10;
+            document.getElementById('downPaymentDollar').value = Math.round(dVal);
+            document.getElementById('downPaymentPctNum').value = pct;
+            document.getElementById('downPaymentPct').value = Math.min(60, pct);
+            runSimulation();
+        }
+
+        function handleFilingStatusChange() {
+            runSimulation();
+        }
+
+        function toggleSection(secId) {
+            const el = document.getElementById(secId);
+            const icon = document.getElementById('icon-' + secId);
+            if (!el) return;
+            el.classList.toggle('hidden');
+            if (icon) {
+                icon.classList.toggle('rotate-180');
+            }
+        }
+
+        function toggleTheme() {
+            document.documentElement.classList.toggle('dark');
+            if (latestSim) {
+                drawLineCharts();
+            }
+        }
+
+        function applyPreset(presetKey) {
+            const p = PRESETS[presetKey];
+            if (!p) return;
+
+            // Highlight active preset button
+            document.querySelectorAll('.preset-btn').forEach(btn => {
+                btn.className = 'preset-btn px-2.5 py-1.5 rounded-lg font-medium transition-all text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white';
+            });
+            const activeBtn = document.getElementById('preset-' + presetKey);
+            if (activeBtn) {
+                activeBtn.className = 'preset-btn px-2.5 py-1.5 rounded-lg font-medium transition-all bg-white dark:bg-slate-900 shadow-sm text-emerald-600 dark:text-emerald-400';
+            }
+
+            // Populate values
+            document.getElementById('horizonYears').value = p.horizonYears;
+            document.getElementById('horizonDisplay').textContent = p.horizonYears;
+
+            document.getElementById('homePrice').value = p.homePrice;
+            document.getElementById('homePriceNum').value = p.homePrice;
+
+            document.getElementById('downPaymentPct').value = p.downPaymentPct;
+            document.getElementById('downPaymentPctNum').value = p.downPaymentPct;
+            document.getElementById('downPaymentDollar').value = Math.round(p.homePrice * (p.downPaymentPct / 100));
+
+            document.getElementById('mortgageRate').value = p.mortgageRate;
+            document.getElementById('mortgageRateNum').value = p.mortgageRate;
+
+            document.getElementById('loanTerm').value = p.loanTerm;
+            document.getElementById('buyClosingPct').value = p.buyClosingPct;
+            document.getElementById('sellClosingPct').value = p.sellClosingPct;
+
+            document.getElementById('hoaMonthly').value = p.hoaMonthly;
+            document.getElementById('hoaMonthlyNum').value = p.hoaMonthly;
+
+            document.getElementById('propTaxRate').value = p.propTaxRate;
+            document.getElementById('propTaxRateNum').value = p.propTaxRate;
+
+            document.getElementById('homeAppreciation').value = p.homeAppreciation;
+            document.getElementById('homeAppreciationNum').value = p.homeAppreciation;
+
+            document.getElementById('maintenancePct').value = p.maintenancePct;
+            document.getElementById('homeInsuranceAnnual').value = p.homeInsuranceAnnual;
+
+            document.getElementById('filingStatus').value = p.filingStatus;
+            document.getElementById('marginalTaxRate').value = p.marginalTaxRate;
+            document.getElementById('otherSaltAnnual').value = p.otherSaltAnnual;
+            document.getElementById('saltCapLimit').value = p.saltCapLimit;
+
+            document.getElementById('monthlyRent').value = p.monthlyRent;
+            document.getElementById('monthlyRentNum').value = p.monthlyRent;
+
+            document.getElementById('rentGrowth').value = p.rentGrowth;
+            document.getElementById('rentGrowthNum').value = p.rentGrowth;
+
+            document.getElementById('investReturn').value = p.investReturn;
+            document.getElementById('investReturnNum').value = p.investReturn;
+
+            document.getElementById('renterInsuranceMo').value = p.renterInsuranceMo;
+            document.getElementById('capGainsTaxRate').value = p.capGainsTaxRate;
+
+            runSimulation();
+        }
+
+        function resetToDefaults() {
+            applyPreset('baseline');
+        }
+
+        // ============================================================================
+        // CORE RENT VS. BUY FINANCIAL MODEL (MONTHLY GRANULARITY)
+        // ============================================================================
+        function runSimulation() {
+            // Read all user inputs safely
+            const horizonYears = Math.max(1, Math.min(30, parseInt(document.getElementById('horizonYears').value) || 10));
+            const homePrice = Math.max(10000, parseFloat(document.getElementById('homePriceNum').value) || 550000);
+            const downPaymentPct = Math.max(0, Math.min(95, parseFloat(document.getElementById('downPaymentPctNum').value) || 20));
+            const mortgageRate = Math.max(0, parseFloat(document.getElementById('mortgageRateNum').value) || 6.25) / 100;
+            const loanTermYears = parseInt(document.getElementById('loanTerm').value) || 30;
+            const buyClosingPct = Math.max(0, parseFloat(document.getElementById('buyClosingPct').value) || 0) / 100;
+            const sellClosingPct = Math.max(0, parseFloat(document.getElementById('sellClosingPct').value) || 0) / 100;
+
+            const hoaMonthlyInit = Math.max(0, parseFloat(document.getElementById('hoaMonthlyNum').value) || 0);
+            const propTaxRate = Math.max(0, parseFloat(document.getElementById('propTaxRateNum').value) || 0) / 100;
+            const homeAppreciation = (parseFloat(document.getElementById('homeAppreciationNum').value) || 0) / 100;
+            const maintenancePct = Math.max(0, parseFloat(document.getElementById('maintenancePct').value) || 0) / 100;
+            const homeInsuranceInit = Math.max(0, parseFloat(document.getElementById('homeInsuranceAnnual').value) || 0);
+
+            const filingStatus = document.getElementById('filingStatus').value;
+            const marginalTaxRate = Math.max(0, parseFloat(document.getElementById('marginalTaxRate').value) || 0) / 100;
+            const otherSaltAnnual = Math.max(0, parseFloat(document.getElementById('otherSaltAnnual').value) || 0);
+            const saltCapLimit = parseFloat(document.getElementById('saltCapLimit').value) || 10000;
+
+            const monthlyRentInit = Math.max(0, parseFloat(document.getElementById('monthlyRentNum').value) || 2750);
+            const rentGrowth = (parseFloat(document.getElementById('rentGrowthNum').value) || 0) / 100;
+            const investReturn = (parseFloat(document.getElementById('investReturnNum').value) || 0) / 100;
+            const renterInsuranceInit = Math.max(0, parseFloat(document.getElementById('renterInsuranceMo').value) || 0);
+            const capGainsTaxRate = Math.max(0, parseFloat(document.getElementById('capGainsTaxRate').value) || 0) / 100;
+
+            // Standard deduction hurdle based on filing status
+            let standardDeduction = 15000;
+            if (filingStatus === 'married') standardDeduction = 30000;
+            if (filingStatus === 'none') standardDeduction = 0;
+
+            // Initial Capital Requirements (Day 0)
+            const downPayment = homePrice * (downPaymentPct / 100);
+            const buyClosingCosts = homePrice * buyClosingPct;
+            const initialBuyerUpfrontCash = downPayment + buyClosingCosts;
+
+            const loanPrincipal = Math.max(0, homePrice - downPayment);
+            const totalLoanMonths = loanTermYears * 12;
+            const monthlyMortgageRate = mortgageRate / 12;
+
+            let monthlyPI = 0;
+            if (loanPrincipal > 0) {
+                if (monthlyMortgageRate > 0) {
+                    monthlyPI = loanPrincipal * (monthlyMortgageRate * Math.pow(1 + monthlyMortgageRate, totalLoanMonths)) /
+                                (Math.pow(1 + monthlyMortgageRate, totalLoanMonths) - 1);
+                } else {
+                    monthlyPI = loanPrincipal / totalLoanMonths;
+                }
+            }
+
+            // PMI check (<20% down payment)
+            const pmiAnnualRate = 0.0065; // 0.65% of loan per year until 80% LTV
+            const initialMonthlyPMI = (downPaymentPct < 20) ? (loanPrincipal * pmiAnnualRate) / 12 : 0;
+            const pmiBadge = document.getElementById('pmiBadge');
+            if (downPaymentPct < 20 && loanPrincipal > 0) {
+                pmiBadge.classList.remove('hidden');
+                document.getElementById('pmiAmountText').textContent = fmtCurrency(initialMonthlyPMI);
+            } else {
+                pmiBadge.classList.add('hidden');
+            }
+
+            // Compounding rates per month
+            const monthlyHomeAppr = Math.pow(1 + homeAppreciation, 1 / 12) - 1;
+            const monthlyInvestReturn = Math.pow(1 + investReturn, 1 / 12) - 1;
+            const inflationRate = 0.025; // General inflation for HOA & insurance scaling
+
+            // Portfolio states
+            // Renter invests initialBuyerUpfrontCash on Day 0
+            let renterPortfolio = initialBuyerUpfrontCash;
+            let renterCostBasis = initialBuyerUpfrontCash;
+
+            // Buyer starts with $0 side investment portfolio, and invests if rent > ownership cost in later years
+            let buyerSidePortfolio = 0;
+            let buyerSideCostBasis = 0;
+
+            let remainingBalance = loanPrincipal;
+            let currentHomeValue = homePrice;
+
+            // Cumulative trackers
+            let cumPrincipalPaid = 0;
+            let cumInterestPaid = 0;
+            let cumPropTaxPaid = 0;
+            let cumHoaPaid = 0;
+            let cumMaintInsPmiPaid = 0;
+            let cumTaxShieldSaved = 0;
+            let cumBuyerSunk = buyClosingCosts; // Starts with upfront buying closing costs
+            let cumRenterSunk = 0;
+            let cumRentPaid = 0;
+            let cumRenterInsPaid = 0;
+
+            const yearlyData = [];
+            // Push Year 0 initial snapshot
+            const initSellCost = homePrice * sellClosingPct;
+            yearlyData.push({
+                year: 0,
+                homeValue: homePrice,
+                loanBalance: loanPrincipal,
+                netHomeEquity: downPayment - initSellCost,
+                buyerSideNet: 0,
+                buyerTotalNetWealth: downPayment - initSellCost,
+                renterTotalNetWealth: initialBuyerUpfrontCash,
+                cumBuyerSunk: buyClosingCosts,
+                cumRenterSunk: 0,
+                annualBuyOutflow: initialBuyerUpfrontCash,
+                annualTaxSavings: 0,
+                annualRentOutflow: 0,
+                netAdvantage: (downPayment - initSellCost) - initialBuyerUpfrontCash
+            });
+
+            let breakevenYearExact = null;
+
+            for (let yr = 1; yr <= horizonYears; yr++) {
+                // Annual rates that step once a year
+                const yearRentMo = monthlyRentInit * Math.pow(1 + rentGrowth, yr - 1);
+                const yearRenterInsMo = renterInsuranceInit * Math.pow(1 + inflationRate, yr - 1);
+                const yearHoaMo = hoaMonthlyInit * Math.pow(1 + inflationRate, yr - 1);
+                const yearHomeInsMo = (homeInsuranceInit * Math.pow(1 + inflationRate, yr - 1)) / 12;
+
+                let yrInterest = 0;
+                let yrPrincipal = 0;
+                let yrPropTax = 0;
+                let yrHoa = 0;
+                let yrMaintInsPmi = 0;
+                let yrRent = 0;
+                let yrRenterIns = 0;
+
+                // Pre-estimate annual interest & property tax for monthly tax-shield cash-flow adjustment
+                // First, simulate 12 months of loan & home value to get exact interest & property tax
+                let tempBalance = remainingBalance;
+                let tempHomeVal = currentHomeValue;
+                const monthRecords = [];
+
+                for (let m = 1; m <= 12; m++) {
+                    const globalMonth = (yr - 1) * 12 + m;
+                    tempHomeVal = tempHomeVal * (1 + monthlyHomeAppr);
+
+                    let mInterest = 0;
+                    let mPrincipal = 0;
+                    if (globalMonth <= totalLoanMonths && tempBalance > 0) {
+                        mInterest = tempBalance * monthlyMortgageRate;
+                        mPrincipal = Math.min(tempBalance, monthlyPI - mInterest);
+                        tempBalance = Math.max(0, tempBalance - mPrincipal);
+                    }
+
+                    const mPropTax = (tempHomeVal * propTaxRate) / 12;
+                    const mMaint = (tempHomeVal * maintenancePct) / 12;
+                    // PMI applies if current loan balance > 80% of original home price (or current home value)
+                    const mPmi = (tempBalance > homePrice * 0.80) ? (loanPrincipal * pmiAnnualRate) / 12 : 0;
+
+                    yrInterest += mInterest;
+                    yrPrincipal += mPrincipal;
+                    yrPropTax += mPropTax;
+                    yrHoa += yearHoaMo;
+                    yrMaintInsPmi += (mMaint + yearHomeInsMo + mPmi);
+                    yrRent += yearRentMo;
+                    yrRenterIns += yearRenterInsMo;
+
+                    monthRecords.push({
+                        homeVal: tempHomeVal,
+                        balance: tempBalance,
+                        mInterest,
+                        mPrincipal,
+                        mPropTax,
+                        mMaint,
+                        mPmi
+                    });
+                }
+
+                // Calculate Annual Itemized Tax Deduction Benefit
+                // Deductible SALT = min(saltCapLimit, otherSaltAnnual + yrPropTax)
+                // Compare Buyer's Total Itemized Deductions vs. Renter's baseline deduction (max(StandardDeduction, min(saltCapLimit, otherSaltAnnual)))
+                const renterDeduction = Math.max(standardDeduction, Math.min(saltCapLimit, otherSaltAnnual));
+                // Mortgage interest deduction cap at $750k loan principal (pro-rated if loan > $750k)
+                const deductibleLoanRatio = loanPrincipal > 750000 ? (750000 / loanPrincipal) : 1.0;
+                const deductibleMortgageInterest = yrInterest * deductibleLoanRatio;
+                const buyerSaltDeduction = Math.min(saltCapLimit, otherSaltAnnual + yrPropTax);
+                const buyerTotalItemized = Math.max(standardDeduction, buyerSaltDeduction + deductibleMortgageInterest);
+
+                const incrementalTaxableReduction = Math.max(0, buyerTotalItemized - renterDeduction);
+                const annualTaxSavings = incrementalTaxableReduction * marginalTaxRate;
+                const monthlyTaxSavings = annualTaxSavings / 12;
+
+                // Now step through each of the 12 months to compound portfolios and invest monthly cash-flow differentials
+                for (let m = 0; m < 12; m++) {
+                    const rec = monthRecords[m];
+
+                    // Grow existing portfolios for 1 month
+                    renterPortfolio *= (1 + monthlyInvestReturn);
+                    buyerSidePortfolio *= (1 + monthlyInvestReturn);
+
+                    const buyerNetMoOutflow = rec.mInterest + rec.mPrincipal + rec.mPropTax + yearHoaMo + rec.mMaint + yearHomeInsMo + rec.mPmi - monthlyTaxSavings;
+                    const renterNetMoOutflow = yearRentMo + yearRenterInsMo;
+
+                    // Whoever spends LESS this month invests the difference into their portfolio
+                    const cashFlowDiff = buyerNetMoOutflow - renterNetMoOutflow;
+                    if (cashFlowDiff > 0) {
+                        // Buying costs more -> Renter invests the savings
+                        renterPortfolio += cashFlowDiff;
+                        renterCostBasis += cashFlowDiff;
+                    } else if (cashFlowDiff < 0) {
+                        // Renting costs more -> Buyer invests the savings in side portfolio
+                        const buyerSaved = Math.abs(cashFlowDiff);
+                        buyerSidePortfolio += buyerSaved;
+                        buyerSideCostBasis += buyerSaved;
+                    }
+                }
+
+                // Update end-of-year state
+                currentHomeValue = tempHomeVal;
+                remainingBalance = tempBalance;
+
+                cumPrincipalPaid += yrPrincipal;
+                cumInterestPaid += yrInterest;
+                cumPropTaxPaid += yrPropTax;
+                cumHoaPaid += yrHoa;
+                cumMaintInsPmiPaid += yrMaintInsPmi;
+                cumTaxShieldSaved += annualTaxSavings;
+                cumRentPaid += yrRent;
+                cumRenterInsPaid += yrRenterIns;
+
+                // Selling costs if liquidated at end of year `yr`
+                const sellingRealtorFee = currentHomeValue * sellClosingPct;
+
+                // Home Capital Gains Tax exclusion ($250k Single / $500k Married)
+                const homeGainExclusion = (filingStatus === 'married') ? 500000 : 250000;
+                const netHomeCapitalGain = Math.max(0, (currentHomeValue - sellingRealtorFee) - (homePrice + buyClosingCosts) - homeGainExclusion);
+                const homeCapGainsTax = netHomeCapitalGain * capGainsTaxRate;
+
+                const netHomeEquityAfterSale = currentHomeValue - remainingBalance - sellingRealtorFee - homeCapGainsTax;
+
+                // Liquidate side investment portfolios after Capital Gains Tax on investment gains
+                const buyerSideGain = Math.max(0, buyerSidePortfolio - buyerSideCostBasis);
+                const buyerSideNet = buyerSidePortfolio - (buyerSideGain * capGainsTaxRate);
+
+                const renterPortfolioGain = Math.max(0, renterPortfolio - renterCostBasis);
+                const renterTotalNetWealth = renterPortfolio - (renterPortfolioGain * capGainsTaxRate);
+
+                const buyerTotalNetWealth = netHomeEquityAfterSale + buyerSideNet;
+
+                // Cumulative Unrecoverable ("Sunk") Costs
+                // For Buyer: Buying Closing + Selling Closing + Cumulative Interest + PropTax + HOA + Maint/Ins/PMI - Tax Shield
+                const totalBuyerSunkAtYear = buyClosingCosts + sellingRealtorFee + homeCapGainsTax +
+                    cumInterestPaid + cumPropTaxPaid + cumHoaPaid + cumMaintInsPmiPaid - cumTaxShieldSaved;
+                const totalRenterSunkAtYear = cumRentPaid + cumRenterInsPaid;
+
+                const prevAdv = yearlyData[yearlyData.length - 1].netAdvantage;
+                const currAdv = buyerTotalNetWealth - renterTotalNetWealth;
+
+                // Detect exact fractional breakeven year where Buyer Net Wealth surpasses Renter Net Wealth
+                if (breakevenYearExact === null && currAdv >= 0 && prevAdv < 0) {
+                    const fraction = Math.abs(prevAdv) / (Math.abs(prevAdv) + currAdv);
+                    breakevenYearExact = (yr - 1) + fraction;
+                }
+
+                yearlyData.push({
+                    year: yr,
+                    homeValue: currentHomeValue,
+                    loanBalance: remainingBalance,
+                    netHomeEquity: netHomeEquityAfterSale,
+                    buyerSideNet: buyerSideNet,
+                    buyerTotalNetWealth: buyerTotalNetWealth,
+                    renterTotalNetWealth: renterTotalNetWealth,
+                    cumBuyerSunk: totalBuyerSunkAtYear,
+                    cumRenterSunk: totalRenterSunkAtYear,
+                    annualBuyOutflow: yrInterest + yrPrincipal + yrPropTax + yrHoa + yrMaintInsPmi,
+                    annualTaxSavings: annualTaxSavings,
+                    annualRentOutflow: yrRent + yrRenterIns,
+                    yrInterest,
+                    yrPrincipal,
+                    yrPropTax,
+                    yrHoa,
+                    yrMaintInsPmi,
+                    sellingRealtorFee,
+                    netAdvantage: currAdv
+                });
+            }
+
+            latestSim = {
+                horizonYears,
+                homePrice,
+                downPayment,
+                buyClosingCosts,
+                initialBuyerUpfrontCash,
+                monthlyPI,
+                yearlyData,
+                breakevenYearExact,
+                totals: {
+                    cumPrincipalPaid,
+                    cumInterestPaid,
+                    cumPropTaxPaid,
+                    cumHoaPaid,
+                    cumMaintInsPmiPaid,
+                    cumTaxShieldSaved,
+                    cumRentPaid,
+                    cumRenterInsPaid,
+                    renterCostBasis,
+                    buyerSideCostBasis
+                }
+            };
+
+            updateDashboardUI();
+            drawLineCharts();
+            renderStackedBreakdown();
+            renderAmortizationTable();
+        }
+
+        // ============================================================================
+        // UPDATE HERO SUMMARY BANNER & KPI CARDS
+        // ============================================================================
+        function updateDashboardUI() {
+            if (!latestSim) return;
+            const { horizonYears, yearlyData, breakevenYearExact } = latestSim;
+            const finalYr = yearlyData[yearlyData.length - 1];
+            const yr1 = yearlyData[1];
+
+            // Year 1 Tax Savings Badge in Sidebar
+            document.getElementById('yr1TaxSavingsBadge').textContent = `${fmtCurrency(yr1.annualTaxSavings)} / yr`;
+
+            const wealthDiff = finalYr.buyerTotalNetWealth - finalYr.renterTotalNetWealth;
+            const heroBanner = document.getElementById('heroBanner');
+            const verdictPill = document.getElementById('verdictPill');
+            const verdictPillText = document.getElementById('verdictPillText');
+            const verdictHeadline = document.getElementById('verdictHeadline');
+            const verdictSubtext = document.getElementById('verdictSubtext');
+
+            verdictPillText.textContent = `${horizonYears}-Year Financial Verdict`;
+
+            if (wealthDiff >= 0) {
+                heroBanner.className = 'relative overflow-hidden rounded-2xl p-5 sm:p-6 border border-emerald-500/30 bg-gradient-to-br from-emerald-500/10 via-slate-900/5 to-indigo-500/10 dark:from-emerald-950/50 dark:via-slate-900 dark:to-indigo-950/40 shadow-sm';
+                verdictPill.className = 'inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 border border-emerald-500/30';
+                verdictHeadline.innerHTML = `Buying builds <span class="text-emerald-500 dark:text-emerald-400 font-mono">${fmtCurrency(wealthDiff)}</span> more wealth after ${horizonYears} ${horizonYears === 1 ? 'year' : 'years'}`;
+                verdictSubtext.textContent = `After Realtor selling fees (${fmtCurrency(finalYr.sellingRealtorFee)}), mortgage payoff, tax deductions (${fmtCurrency(latestSim.totals.cumTaxShieldSaved)} saved), and opportunity cost of capital.`;
+            } else {
+                heroBanner.className = 'relative overflow-hidden rounded-2xl p-5 sm:p-6 border border-indigo-500/30 bg-gradient-to-br from-indigo-500/10 via-slate-900/5 to-emerald-500/10 dark:from-indigo-950/50 dark:via-slate-900 dark:to-emerald-950/40 shadow-sm';
+                verdictPill.className = 'inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-500/15 text-indigo-600 dark:text-indigo-300 border border-indigo-500/30';
+                verdictHeadline.innerHTML = `Renting builds <span class="text-indigo-500 dark:text-indigo-400 font-mono">${fmtCurrency(Math.abs(wealthDiff))}</span> more wealth after ${horizonYears} ${horizonYears === 1 ? 'year' : 'years'}`;
+                verdictSubtext.textContent = `Investing the avoided ${fmtCurrency(latestSim.initialBuyerUpfrontCash)} upfront cash and monthly cash-flow savings compounds faster than net home equity over ${horizonYears} years.`;
+            }
+
+            // Breakeven Indicator
+            const beValEl = document.getElementById('breakevenValue');
+            const beNoteEl = document.getElementById('breakevenNote');
+            if (breakevenYearExact !== null) {
+                beValEl.textContent = `Year ${breakevenYearExact.toFixed(1)}`;
+                beValEl.className = 'text-lg sm:text-xl font-mono font-bold mt-1 text-emerald-600 dark:text-emerald-400';
+                beNoteEl.textContent = `Buying overtakes renting (~${Math.round(breakevenYearExact * 12)} mos)`;
+            } else {
+                beValEl.textContent = `> ${horizonYears} Years`;
+                beValEl.className = 'text-lg sm:text-xl font-mono font-bold mt-1 text-indigo-600 dark:text-indigo-400';
+                beNoteEl.textContent = `Renting stays ahead all ${horizonYears} yrs`;
+            }
+
+            // Year 1 Monthly Cash Flow comparison
+            const yr1NetBuyMo = (yr1.annualBuyOutflow - yr1.annualTaxSavings) / 12;
+            const yr1NetRentMo = yr1.annualRentOutflow / 12;
+            document.getElementById('yr1BuyMo').textContent = fmtCurrency(yr1NetBuyMo);
+            document.getElementById('yr1RentMo').textContent = fmtCurrency(yr1NetRentMo);
+            const moDiff = yr1NetBuyMo - yr1NetRentMo;
+            document.getElementById('yr1DiffNote').textContent = moDiff >= 0
+                ? `Buying costs ${fmtCurrency(moDiff)}/mo more in Yr 1`
+                : `Buying is ${fmtCurrency(Math.abs(moDiff))}/mo cheaper in Yr 1`;
+
+            // 4 KPI Cards
+            document.getElementById('kpiBuyerWealth').textContent = fmtCurrency(finalYr.buyerTotalNetWealth);
+            document.getElementById('kpiBuyerWealthSub').textContent = `${fmtCompact(finalYr.netHomeEquity)} Eq + ${fmtCompact(finalYr.buyerSideNet)} Inv`;
+
+            document.getElementById('kpiRenterWealth').textContent = fmtCurrency(finalYr.renterTotalNetWealth);
+            document.getElementById('kpiRenterWealthSub').textContent = `Basis: ${fmtCompact(latestSim.totals.renterCostBasis)}`;
+
+            document.getElementById('kpiBuyerSunk').textContent = fmtCurrency(finalYr.cumBuyerSunk);
+            document.getElementById('kpiRenterSunk').textContent = fmtCurrency(finalYr.cumRenterSunk);
+        }
+
+        // ============================================================================
+        // INTERACTIVE CANVAS LINE CHARTS (NET WEALTH & SUNK COSTS)
+        // ============================================================================
+        function drawLineCharts() {
+            if (!latestSim) return;
+            const { yearlyData } = latestSim;
+
+            renderDualLineChart(
+                'wealthChartCanvas',
+                'wealthTooltip',
+                yearlyData.map(d => d.year),
+                yearlyData.map(d => d.buyerTotalNetWealth),
+                yearlyData.map(d => d.renterTotalNetWealth),
+                'Buyer Net Wealth',
+                'Renter Net Wealth',
+                '#10b981',
+                '#6366f1',
+                true
+            );
+
+            renderDualLineChart(
+                'sunkChartCanvas',
+                'sunkTooltip',
+                yearlyData.map(d => d.year),
+                yearlyData.map(d => d.cumBuyerSunk),
+                yearlyData.map(d => d.cumRenterSunk),
+                'Buyer Sunk Costs',
+                'Renter Sunk Costs',
+                '#10b981',
+                '#6366f1',
+                false
+            );
+        }
+
+        function renderDualLineChart(canvasId, tooltipId, years, seriesA, seriesB, labelA, labelB, colorA, colorB, showBreakevenDot) {
+            const canvas = document.getElementById(canvasId);
+            const tooltip = document.getElementById(tooltipId);
+            if (!canvas) return;
+
+            const isDark = document.documentElement.classList.contains('dark');
+            const dpr = window.devicePixelRatio || 1;
+            const rect = canvas.parentElement.getBoundingClientRect();
+            const width = Math.max(280, rect.width);
+            const height = Math.max(240, rect.height);
+
+            canvas.width = width * dpr;
+            canvas.height = height * dpr;
+            canvas.style.width = width + 'px';
+            canvas.style.height = height + 'px';
+
+            const ctx = canvas.getContext('2d');
+            ctx.scale(dpr, dpr);
+
+            const pad = { top: 20, right: 20, bottom: 32, left: 58 };
+            const plotW = width - pad.left - pad.right;
+            const plotH = height - pad.top - pad.bottom;
+
+            const allVals = [...seriesA, ...seriesB, 0];
+            let minVal = Math.min(...allVals);
+            let maxVal = Math.max(...allVals);
+            if (maxVal === minVal) maxVal += 10000;
+            const valRange = maxVal - minVal;
+
+            const xForIndex = (idx) => pad.left + (idx / Math.max(1, years.length - 1)) * plotW;
+            const yForVal = (v) => pad.top + plotH - ((v - minVal) / valRange) * plotH;
+
+            function drawBase(hoverIdx = null) {
+                ctx.clearRect(0, 0, width, height);
+
+                // Horizontal grid lines
+                const gridSteps = 4;
+                ctx.lineWidth = 1;
+                ctx.font = '500 10px "JetBrains Mono", monospace';
+                ctx.textAlign = 'right';
+                ctx.textBaseline = 'middle';
+
+                for (let i = 0; i <= gridSteps; i++) {
+                    const v = minVal + (valRange * i) / gridSteps;
+                    const y = yForVal(v);
+                    ctx.strokeStyle = isDark ? 'rgba(51, 65, 85, 0.55)' : 'rgba(226, 232, 240, 0.9)';
+                    ctx.beginPath();
+                    ctx.moveTo(pad.left, y);
+                    ctx.lineTo(width - pad.right, y);
+                    ctx.stroke();
+
+                    ctx.fillStyle = isDark ? '#94a3b8' : '#64748b';
+                    ctx.fillText(fmtCompact(v), pad.left - 8, y);
+                }
+
+                // X-axis year labels
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'top';
+                const maxYr = years.length - 1;
+                const step = maxYr <= 10 ? 1 : (maxYr <= 20 ? 2 : 5);
+                for (let i = 0; i <= maxYr; i++) {
+                    if (i % step === 0 || i === maxYr) {
+                        const x = xForIndex(i);
+                        ctx.fillStyle = isDark ? '#94a3b8' : '#64748b';
+                        ctx.fillText('Yr ' + years[i], x, height - pad.bottom + 10);
+                    }
+                }
+
+                // Area fill & stroke helper
+                function drawCurve(data, color, fillAlpha) {
+                    ctx.beginPath();
+                    data.forEach((v, i) => {
+                        const x = xForIndex(i);
+                        const y = yForVal(v);
+                        if (i === 0) ctx.moveTo(x, y);
+                        else ctx.lineTo(x, y);
+                    });
+                    ctx.strokeStyle = color;
+                    ctx.lineWidth = 2.75;
+                    ctx.lineJoin = 'round';
+                    ctx.stroke();
+
+                    // Subtle gradient fill
+                    const grad = ctx.createLinearGradient(0, pad.top, 0, pad.top + plotH);
+                    grad.addColorStop(0, color + fillAlpha);
+                    grad.addColorStop(1, color + '00');
+                    ctx.lineTo(xForIndex(data.length - 1), pad.top + plotH);
+                    ctx.lineTo(xForIndex(0), pad.top + plotH);
+                    ctx.closePath();
+                    ctx.fillStyle = grad;
+                    ctx.fill();
+                }
+
+                drawCurve(seriesB, colorB, '28');
+                drawCurve(seriesA, colorA, '30');
+
+                // Draw data points
+                [
+                    { data: seriesB, color: colorB },
+                    { data: seriesA, color: colorA }
+                ].forEach(group => {
+                    group.data.forEach((v, i) => {
+                        const x = xForIndex(i);
+                        const y = yForVal(v);
+                        ctx.beginPath();
+                        ctx.arc(x, y, hoverIdx === i ? 5 : 3, 0, Math.PI * 2);
+                        ctx.fillStyle = group.color;
+                        ctx.fill();
+                        ctx.lineWidth = 1.5;
+                        ctx.strokeStyle = isDark ? '#0f172a' : '#ffffff';
+                        ctx.stroke();
+                    });
+                });
+
+                // Highlight Breakeven crossover marker if applicable
+                if (showBreakevenDot && latestSim.breakevenYearExact !== null) {
+                    const beYr = latestSim.breakevenYearExact;
+                    const idxFloor = Math.floor(beYr);
+                    const idxCeil = Math.min(years.length - 1, Math.ceil(beYr));
+                    const frac = beYr - idxFloor;
+                    const beX = xForIndex(idxFloor) + frac * (xForIndex(idxCeil) - xForIndex(idxFloor));
+                    const beVal = seriesA[idxFloor] + frac * (seriesA[idxCeil] - seriesA[idxFloor]);
+                    const beY = yForVal(beVal);
+
+                    ctx.beginPath();
+                    ctx.arc(beX, beY, 6, 0, Math.PI * 2);
+                    ctx.fillStyle = '#0ea5e9';
+                    ctx.fill();
+                    ctx.lineWidth = 2;
+                    ctx.strokeStyle = '#ffffff';
+                    ctx.stroke();
+                }
+
+                // Vertical Hover Guide Line
+                if (hoverIdx !== null) {
+                    const hx = xForIndex(hoverIdx);
+                    ctx.save();
+                    ctx.setLineDash([4, 4]);
+                    ctx.strokeStyle = isDark ? '#cbd5e1' : '#475569';
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.moveTo(hx, pad.top);
+                    ctx.lineTo(hx, pad.top + plotH);
+                    ctx.stroke();
+                    ctx.restore();
+                }
+            }
+
+            drawBase();
+
+            // Interactive mouse/touch scrub
+            canvas.onmousemove = (e) => {
+                const cRect = canvas.getBoundingClientRect();
+                const relX = e.clientX - cRect.left;
+                const rawIdx = ((relX - pad.left) / plotW) * (years.length - 1);
+                const idx = Math.max(0, Math.min(years.length - 1, Math.round(rawIdx)));
+
+                drawBase(idx);
+
+                const valA = seriesA[idx];
+                const valB = seriesB[idx];
+                const diff = valA - valB;
+
+                tooltip.classList.remove('hidden');
+                tooltip.innerHTML = `
+                    <div class="font-bold text-slate-200 border-b border-slate-700 pb-1 mb-1.5">Year ${years[idx]}</div>
+                    <div class="flex justify-between gap-4 text-emerald-400"><span>${labelA}:</span><span>${fmtCurrency(valA)}</span></div>
+                    <div class="flex justify-between gap-4 text-indigo-400"><span>${labelB}:</span><span>${fmtCurrency(valB)}</span></div>
+                    <div class="flex justify-between gap-4 pt-1 mt-1 border-t border-slate-800 text-slate-300">
+                        <span>Difference:</span>
+                        <span class="${diff >= 0 ? 'text-emerald-400' : 'text-indigo-400'} font-bold">${diff >= 0 ? '+' : ''}${fmtCurrency(diff)}</span>
+                    </div>
+                `;
+
+                const tipX = Math.min(width - 195, Math.max(10, xForIndex(idx) - 85));
+                tooltip.style.left = tipX + 'px';
+                tooltip.style.top = '12px';
+            };
+
+            canvas.onmouseleave = () => {
+                drawBase(null);
+                tooltip.classList.add('hidden');
+            };
+        }
+
+        // ============================================================================
+        // COST BREAKDOWN VS. WEALTH RETAINED HORIZONTAL STACKED BARS
+        // ============================================================================
+        function renderStackedBreakdown() {
+            if (!latestSim) return;
+            const { horizonYears, downPayment, buyClosingCosts, totals, yearlyData } = latestSim;
+            const finalYr = yearlyData[yearlyData.length - 1];
+
+            document.getElementById('breakdownTitle').textContent = `${horizonYears}-Year Cash Outflows vs. Final Net Wealth Retained`;
+            document.getElementById('taxSummaryNote').innerHTML = `Cumulative Tax Shield Saved: <span class="text-amber-500 font-semibold">${fmtCurrency(totals.cumTaxShieldSaved)}</span>`;
+
+            // Buyer segments
+            const buyerPrincipalAndDown = downPayment + totals.cumPrincipalPaid;
+            const buyerInterestNetTax = Math.max(0, totals.cumInterestPaid - totals.cumTaxShieldSaved);
+            const buyerPropTax = totals.cumPropTaxPaid;
+            const buyerHoa = totals.cumHoaPaid;
+            const buyerMaintIns = totals.cumMaintInsPmiPaid;
+            const buyerClosing = buyClosingCosts + finalYr.sellingRealtorFee;
+
+            const buyerSegments = [
+                { label: 'Down + Principal (Equity)', val: buyerPrincipalAndDown, color: 'bg-emerald-500' },
+                { label: 'Net Mortgage Interest', val: buyerInterestNetTax, color: 'bg-rose-500' },
+                { label: 'Property Taxes', val: buyerPropTax, color: 'bg-amber-500' },
+                { label: 'HOA / Condo Fees', val: buyerHoa, color: 'bg-purple-500' },
+                { label: 'Maint, Ins & PMI', val: buyerMaintIns, color: 'bg-sky-500' },
+                { label: 'Buy & Sell Closing', val: buyerClosing, color: 'bg-slate-500' }
+            ];
+
+            const buyerSum = buyerSegments.reduce((acc, s) => acc + s.val, 0) || 1;
+            document.getElementById('buyerTotalOutflowLabel').textContent = `Total Cash + Selling Cost: ${fmtCurrency(buyerSum)} | Final Net Wealth: ${fmtCurrency(finalYr.buyerTotalNetWealth)}`;
+
+            const buyerBarEl = document.getElementById('buyerStackedBar');
+            const buyerLegendEl = document.getElementById('buyerLegendGrid');
+            buyerBarEl.innerHTML = buyerSegments.map(s => {
+                const pct = Math.max(0.5, (s.val / buyerSum) * 100);
+                return `<div class="${s.color} h-full first:rounded-l-lg last:rounded-r-lg transition-all duration-300" style="width:${pct}%" title="${s.label}: ${fmtCurrency(s.val)} (${pct.toFixed(1)}%)"></div>`;
+            }).join('');
+
+            buyerLegendEl.innerHTML = buyerSegments.map(s => `
+                <div class="flex items-center gap-1.5">
+                    <span class="w-2.5 h-2.5 rounded-sm shrink-0 ${s.color}"></span>
+                    <div class="truncate">
+                        <div class="text-slate-500 dark:text-slate-400 truncate">${s.label}</div>
+                        <div class="font-mono font-semibold text-slate-800 dark:text-slate-200">${fmtCurrency(s.val)}</div>
+                    </div>
+                </div>
+            `).join('');
+
+            // Renter segments
+            const renterNetGains = Math.max(0, finalYr.renterTotalNetWealth - totals.renterCostBasis);
+            const renterSegments = [
+                { label: 'Total Rent Paid (Sunk)', val: totals.cumRentPaid, color: 'bg-rose-500' },
+                { label: 'Renter Insurance (Sunk)', val: totals.cumRenterInsPaid, color: 'bg-amber-500' },
+                { label: 'Principal Cash Invested', val: totals.renterCostBasis, color: 'bg-indigo-500' },
+                { label: 'Net Compounded Gains', val: renterNetGains, color: 'bg-emerald-500' }
+            ];
+
+            const renterSum = renterSegments.reduce((acc, s) => acc + s.val, 0) || 1;
+            document.getElementById('renterTotalOutflowLabel').textContent = `Rent Paid: ${fmtCurrency(totals.cumRentPaid + totals.cumRenterInsPaid)} | Final Portfolio: ${fmtCurrency(finalYr.renterTotalNetWealth)}`;
+
+            const renterBarEl = document.getElementById('renterStackedBar');
+            const renterLegendEl = document.getElementById('renterLegendGrid');
+            renterBarEl.innerHTML = renterSegments.map(s => {
+                const pct = Math.max(0.5, (s.val / renterSum) * 100);
+                return `<div class="${s.color} h-full first:rounded-l-lg last:rounded-r-lg transition-all duration-300" style="width:${pct}%" title="${s.label}: ${fmtCurrency(s.val)} (${pct.toFixed(1)}%)"></div>`;
+            }).join('');
+
+            renterLegendEl.innerHTML = renterSegments.map(s => `
+                <div class="flex items-center gap-1.5">
+                    <span class="w-2.5 h-2.5 rounded-sm shrink-0 ${s.color}"></span>
+                    <div class="truncate">
+                        <div class="text-slate-500 dark:text-slate-400 truncate">${s.label}</div>
+                        <div class="font-mono font-semibold text-slate-800 dark:text-slate-200">${fmtCurrency(s.val)}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // ============================================================================
+        // YEAR-BY-YEAR AMORTIZATION & WEALTH LEDGER TABLE
+        // ============================================================================
+        function toggleRowExpand(yr) {
+            if (expandedYears.has(yr)) expandedYears.delete(yr);
+            else expandedYears.add(yr);
+            renderAmortizationTable();
+        }
+
+        function renderAmortizationTable() {
+            if (!latestSim) return;
+            const tbody = document.getElementById('amortizationTableBody');
+            const rowsHTML = [];
+
+            // Start from Year 1 to N
+            for (let i = 1; i < latestSim.yearlyData.length; i++) {
+                const d = latestSim.yearlyData[i];
+                const isExpanded = expandedYears.has(d.year);
+                const advPositive = d.netAdvantage >= 0;
+
+                rowsHTML.push(`
+                    <tr onclick="toggleRowExpand(${d.year})" class="cursor-pointer hover:bg-slate-100/80 dark:hover:bg-slate-800/60 transition ${d.year === latestSim.horizonYears ? 'bg-emerald-500/5 dark:bg-emerald-500/10 font-semibold' : ''}">
+                        <td class="py-2.5 px-3 flex items-center gap-1.5 font-sans font-semibold text-slate-800 dark:text-slate-200">
+                            <i class="ph ${isExpanded ? 'ph-caret-down text-emerald-500' : 'ph-caret-right text-slate-400'}"></i>
+                            Year ${d.year}
+                        </td>
+                        <td class="py-2.5 px-3 text-right text-slate-700 dark:text-slate-300">${fmtCurrency(d.homeValue)}</td>
+                        <td class="py-2.5 px-3 text-right text-slate-500 dark:text-slate-400">${fmtCurrency(d.loanBalance)}</td>
+                        <td class="py-2.5 px-3 text-right text-emerald-600 dark:text-emerald-400 font-semibold">${fmtCurrency(d.netHomeEquity)}</td>
+                        <td class="py-2.5 px-3 text-right text-slate-700 dark:text-slate-300">${fmtCurrency(d.annualBuyOutflow)}</td>
+                        <td class="py-2.5 px-3 text-right text-amber-600 dark:text-amber-400">+${fmtCurrency(d.annualTaxSavings)}</td>
+                        <td class="py-2.5 px-3 text-right text-slate-700 dark:text-slate-300">${fmtCurrency(d.annualRentOutflow)}</td>
+                        <td class="py-2.5 px-3 text-right text-indigo-600 dark:text-indigo-400 font-semibold">${fmtCurrency(d.renterTotalNetWealth)}</td>
+                        <td class="py-2.5 px-3 text-right font-bold ${advPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-indigo-600 dark:text-indigo-400'}">
+                            ${advPositive ? 'Buy +' : 'Rent +'}${fmtCurrency(Math.abs(d.netAdvantage))}
+                        </td>
+                    </tr>
+                `);
+
+                if (isExpanded) {
+                    rowsHTML.push(`
+                        <tr class="bg-slate-100/70 dark:bg-slate-800/40 text-[11px] font-sans">
+                            <td colspan="9" class="p-3.5">
+                                <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3">
+                                    <div class="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                                        <div class="text-slate-400">Principal Paid (Yr ${d.year})</div>
+                                        <div class="font-mono font-semibold text-emerald-500 mt-0.5">${fmtCurrency(d.yrPrincipal)}</div>
+                                    </div>
+                                    <div class="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                                        <div class="text-slate-400">Interest Paid (Yr ${d.year})</div>
+                                        <div class="font-mono font-semibold text-rose-500 mt-0.5">${fmtCurrency(d.yrInterest)}</div>
+                                    </div>
+                                    <div class="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                                        <div class="text-slate-400">Property Tax + HOA</div>
+                                        <div class="font-mono font-semibold text-amber-500 mt-0.5">${fmtCurrency(d.yrPropTax + d.yrHoa)}</div>
+                                    </div>
+                                    <div class="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                                        <div class="text-slate-400">Maint + Ins + PMI</div>
+                                        <div class="font-mono font-semibold text-sky-500 mt-0.5">${fmtCurrency(d.yrMaintInsPmi)}</div>
+                                    </div>
+                                    <div class="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                                        <div class="text-slate-400">Buyer Side Portfolio</div>
+                                        <div class="font-mono font-semibold text-emerald-400 mt-0.5">${fmtCurrency(d.buyerSideNet)}</div>
+                                    </div>
+                                    <div class="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                                        <div class="text-slate-400">Est. Selling Fee</div>
+                                        <div class="font-mono font-semibold text-slate-400 mt-0.5">-${fmtCurrency(d.sellingRealtorFee)}</div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    `);
+                }
+            }
+
+            tbody.innerHTML = rowsHTML.join('');
+        }
+
+        function exportCSV() {
+            if (!latestSim) return;
+            const headers = [
+                'Year', 'Home Value', 'Loan Balance', 'Net Home Equity', 'Buyer Side Portfolio',
+                'Buyer Total Net Wealth', 'Annual Ownership Outflow', 'Annual Tax Shield Savings',
+                'Annual Rent Outflow', 'Renter Portfolio Net Wealth', 'Net Wealth Advantage (Buy - Rent)'
+            ];
+            const rows = latestSim.yearlyData.slice(1).map(d => [
+                d.year,
+                Math.round(d.homeValue),
+                Math.round(d.loanBalance),
+                Math.round(d.netHomeEquity),
+                Math.round(d.buyerSideNet),
+                Math.round(d.buyerTotalNetWealth),
+                Math.round(d.annualBuyOutflow),
+                Math.round(d.annualTaxSavings),
+                Math.round(d.annualRentOutflow),
+                Math.round(d.renterTotalNetWealth),
+                Math.round(d.netAdvantage)
+            ]);
+
+            const csvContent = 'data:text/csv;charset=utf-8,' +
+                [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement('a');
+            link.setAttribute('href', encodedUri);
+            link.setAttribute('download', `rent_vs_buy_${latestSim.horizonYears}yr_schedule.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // Responsive resize listener for canvases
+        window.addEventListener('resize', () => {
+            if (latestSim) drawLineCharts();
+        });
+
+        window.onload = function () {
+            runSimulation();
+        };
+    </script>
+</body>
+</html>
