@@ -111,4 +111,4 @@ Because the project is built as a self-contained single-file architecture, no No
 
 ## 📄 License
 
-Distributed under the MIT License. Feel free to fork, customize, and adapt for personal or educational financial planning.
+Distributed under the [MIT License](LICENSE). Feel free to fork, customize, and adapt for personal or educational financial planning.
