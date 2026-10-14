@@ -78,7 +78,7 @@ At the end of year $y$, both positions are evaluated on an after-tax, post-liqui
 
 ---
 
-## 🚀 Usage & Deployment Instructions
+## 🚀 Usage Instructions
 
 ### Running Locally
 Because the project is built as a self-contained single-file architecture, no Node.js installation, bundler, or build step is required.
@@ -94,13 +94,6 @@ Because the project is built as a self-contained single-file architecture, no No
    * **Linux:** `xdg-open index.html`
 
 > Styling and icons are loaded from CDNs (Tailwind, Phosphor Icons, Google Fonts), so an internet connection is needed for the page to render as intended.
-
-### Hosting on GitHub Pages
-1. Push `index.html` and `README.md` to your GitHub repository's `main` branch.
-2. Navigate to your repository on GitHub and click **Settings** $\rightarrow$ **Pages**.
-3. Under **Build and deployment**, set **Source** to **Deploy from a branch**.
-4. Select the `main` branch and `/ (root)` directory, then click **Save**.
-5. Within 60 seconds, your simulator will be live at `https://fwaadahmad1.github.io/rent-vs-buy-simulator/`.
 
 ---
 
