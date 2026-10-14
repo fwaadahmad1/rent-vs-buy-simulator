@@ -116,10 +116,10 @@
                     <div class="flex items-center gap-2">
                         <h1 class="text-base sm:text-lg font-bold tracking-tight">Rent vs. Buy <span class="text-emerald-500 dark:text-emerald-400">Pro</span></h1>
                         <span class="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                            Wealth & Cash-Flow Engine
+                            Wealth & Monthly Cash-Flow Engine
                         </span>
                     </div>
-                    <p class="text-xs text-slate-500 dark:text-slate-400">Models amortization, itemizable tax deductions, HOA, & opportunity cost</p>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Models monthly payments, amortization, tax deductions, HOA, & opportunity cost</p>
                 </div>
             </div>
 
@@ -131,13 +131,13 @@
                         Baseline 10-Yr
                     </button>
                     <button onclick="applyPreset('metro')" id="preset-metro" class="preset-btn px-2.5 py-1.5 rounded-lg font-medium transition-all text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white">
-                        High-Cost Condo
+                        High-Rate / Urban Condo
                     </button>
                     <button onclick="applyPreset('suburban')" id="preset-suburban" class="preset-btn px-2.5 py-1.5 rounded-lg font-medium transition-all text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white">
-                        Suburban Family
+                        Suburban Family Home
                     </button>
                     <button onclick="applyPreset('highrate')" id="preset-highrate" class="preset-btn px-2.5 py-1.5 rounded-lg font-medium transition-all text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white">
-                        High-Rate / Market Bull
+                        Aggressive Investor
                     </button>
                 </div>
 
@@ -262,6 +262,7 @@
                                 <select id="loanTerm" onchange="runSimulation()" class="w-full px-2 py-1.5 font-mono text-xs font-semibold rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-emerald-500">
                                     <option value="15">15 Years</option>
                                     <option value="20">20 Years</option>
+                                    <option value="25">25 Years</option>
                                     <option value="30" selected>30 Years</option>
                                 </select>
                             </div>
@@ -593,8 +594,323 @@
                 </div>
             </div>
 
-            <!-- CHARTS GRID: CHART 1 (NET WEALTH) & CHART 2 (SUNK COSTS) -->
-            <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            <!-- PROMINENT MONTHLY PAYMENT COMPARISON (BUY VS. RENT) -->
+            <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 sm:p-6 border-2 border-emerald-500/25 dark:border-emerald-500/20 shadow-md">
+                <!-- Header & Interactive Year / Mode Selector -->
+                <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-4 pb-5 border-b border-slate-200 dark:border-slate-800">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                                Monthly Cash-Flow Inspector
+                            </span>
+                            <span id="pmiActiveStatusBadge" class="hidden px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                                PMI Active
+                            </span>
+                        </div>
+                        <h3 class="text-lg sm:text-xl font-extrabold tracking-tight mt-1 flex items-center gap-2">
+                            Monthly Payment Comparison: <span class="text-emerald-500">Buying</span> vs. <span class="text-indigo-500">Renting</span>
+                        </h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                            Inspect exact line-by-line monthly obligations for any year on the timeline or view the full-timeline monthly average
+                        </p>
+                    </div>
+
+                    <!-- Mode Toggles & Year Scrubber -->
+                    <div class="flex flex-wrap items-center gap-3 bg-slate-50 dark:bg-slate-800/70 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700/80">
+                        <!-- Mode Tabs -->
+                        <div class="flex items-center bg-slate-200/70 dark:bg-slate-900 p-1 rounded-lg text-xs font-semibold">
+                            <button id="moModeYear1Btn" onclick="setMonthlyInspectorMode('year1')" class="px-2.5 py-1 rounded-md transition bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 shadow-sm">
+                                Yr 1 Initial
+                            </button>
+                            <button id="moModeCustomBtn" onclick="setMonthlyInspectorMode('custom')" class="px-2.5 py-1 rounded-md transition text-slate-600 dark:text-slate-300">
+                                Inspect Year
+                            </button>
+                            <button id="moModeAvgBtn" onclick="setMonthlyInspectorMode('avg')" class="px-2.5 py-1 rounded-md transition text-slate-600 dark:text-slate-300">
+                                Timeline Avg
+                            </button>
+                        </div>
+
+                        <!-- Year Slider & Badge -->
+                        <div id="moYearSelectorWrap" class="flex items-center gap-2.5 pl-1">
+                            <label for="inspectYearSlider" class="text-xs font-medium text-slate-500 dark:text-slate-400 whitespace-nowrap">Year:</label>
+                            <input type="range" id="inspectYearSlider" min="1" max="10" step="1" value="1" class="w-24 sm:w-32 neutral-slider" oninput="handleInspectYearChange(this.value)">
+                            <span id="inspectYearBadge" class="px-2 py-0.5 rounded-md font-mono font-bold text-xs bg-sky-500/15 text-sky-600 dark:text-sky-400 border border-sky-500/30 min-w-[54px] text-center">
+                                Year 1
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Side-by-Side Monthly Breakdown Cards -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-5">
+
+                    <!-- CARD 1: BUY SCENARIO MONTHLY PAYMENT -->
+                    <div class="rounded-2xl p-5 bg-emerald-500/[0.03] dark:bg-emerald-950/20 border border-emerald-500/25 flex flex-col justify-between">
+                        <div>
+                            <!-- Card Top Header -->
+                            <div class="flex items-start justify-between gap-2 pb-4 border-b border-emerald-500/15">
+                                <div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="w-3 h-3 rounded-full bg-emerald-500"></span>
+                                        <h4 class="text-sm font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">Buy Scenario Monthly Payment</h4>
+                                    </div>
+                                    <p id="buyCardSubLabel" class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Year 1 Monthly Ownership Breakdown</p>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-[11px] font-medium text-slate-500 dark:text-slate-400">Gross Monthly Outflow</div>
+                                    <div id="buyGrossMonthlyTotal" class="text-2xl sm:text-3xl font-mono font-extrabold text-slate-900 dark:text-white">$3,995<span class="text-xs font-normal text-slate-400">/mo</span></div>
+                                </div>
+                            </div>
+
+                            <!-- Net Monthly Payment Highlight Box -->
+                            <div class="my-4 p-3.5 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-between">
+                                <div>
+                                    <div class="text-xs font-bold text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
+                                        <i class="ph-fill ph-check-circle text-emerald-500"></i>
+                                        Net Monthly Payment (After Tax Shield)
+                                    </div>
+                                    <div class="text-[11px] text-emerald-700/80 dark:text-emerald-300/80">
+                                        Includes <span id="buyEquityBuildMoText" class="font-mono font-bold underline">$512/mo</span> going directly into your Home Equity
+                                    </div>
+                                </div>
+                                <div id="buyNetMonthlyTotal" class="text-xl sm:text-2xl font-mono font-extrabold text-emerald-600 dark:text-emerald-400">
+                                    $3,772<span class="text-xs font-normal">/mo</span>
+                                </div>
+                            </div>
+
+                            <!-- Itemized Line-by-Line Monthly Breakdown -->
+                            <div class="space-y-3 text-xs">
+                                <!-- Total P&I Header with Principal vs Interest Split -->
+                                <div class="p-3 rounded-xl bg-white/80 dark:bg-slate-900/90 border border-slate-200/80 dark:border-slate-800 space-y-2">
+                                    <div class="flex justify-between items-center font-semibold text-slate-800 dark:text-slate-100">
+                                        <span class="flex items-center gap-1.5">
+                                            <i class="ph-fill ph-bank text-emerald-500"></i>
+                                            Total Mortgage P&amp;I Payment
+                                        </span>
+                                        <span id="moBreakPI" class="font-mono font-bold text-sm">$2,709 / mo</span>
+                                    </div>
+                                    <!-- Principal Paid Sub-item -->
+                                    <div class="pl-4 space-y-1">
+                                        <div class="flex justify-between text-[11px]">
+                                            <span class="text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
+                                                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                                                ↳ Principal Paid (Builds Equity)
+                                            </span>
+                                            <span id="moBreakPrincipal" class="font-mono font-semibold text-emerald-600 dark:text-emerald-400">$438 / mo</span>
+                                        </div>
+                                        <div class="w-full h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                                            <div id="barBreakPrincipal" class="h-full bg-emerald-500 rounded-full transition-all duration-300" style="width: 15%"></div>
+                                        </div>
+                                    </div>
+                                    <!-- Interest Paid Sub-item -->
+                                    <div class="pl-4 space-y-1">
+                                        <div class="flex justify-between text-[11px]">
+                                            <span class="text-rose-500 dark:text-rose-400 font-medium flex items-center gap-1">
+                                                <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+                                                ↳ Mortgage Interest Paid (Sunk)
+                                            </span>
+                                            <span id="moBreakInterest" class="font-mono font-semibold text-rose-500 dark:text-rose-400">$2,271 / mo</span>
+                                        </div>
+                                        <div class="w-full h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                                            <div id="barBreakInterest" class="h-full bg-rose-500 rounded-full transition-all duration-300" style="width: 55%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Property Taxes -->
+                                <div class="space-y-1">
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-slate-600 dark:text-slate-300 font-medium flex items-center gap-1.5">
+                                            <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                                            Property Taxes
+                                        </span>
+                                        <span id="moBreakPropTax" class="font-mono font-semibold text-slate-800 dark:text-slate-200">$583 / mo</span>
+                                    </div>
+                                    <div class="w-full h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                                        <div id="barBreakPropTax" class="h-full bg-amber-500 rounded-full transition-all duration-300" style="width: 15%"></div>
+                                    </div>
+                                </div>
+
+                                <!-- HOA / Condo Fees -->
+                                <div class="space-y-1">
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-slate-600 dark:text-slate-300 font-medium flex items-center gap-1.5">
+                                            <span class="w-2 h-2 rounded-full bg-purple-500"></span>
+                                            HOA / Condo Fees
+                                        </span>
+                                        <span id="moBreakHoa" class="font-mono font-semibold text-slate-800 dark:text-slate-200">$250 / mo</span>
+                                    </div>
+                                    <div class="w-full h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                                        <div id="barBreakHoa" class="h-full bg-purple-500 rounded-full transition-all duration-300" style="width: 8%"></div>
+                                    </div>
+                                </div>
+
+                                <!-- Homeowner's Insurance -->
+                                <div class="space-y-1">
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-slate-600 dark:text-slate-300 font-medium flex items-center gap-1.5">
+                                            <span class="w-2 h-2 rounded-full bg-sky-500"></span>
+                                            Homeowner's Insurance
+                                        </span>
+                                        <span id="moBreakHomeIns" class="font-mono font-semibold text-slate-800 dark:text-slate-200">$150 / mo</span>
+                                    </div>
+                                    <div class="w-full h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                                        <div id="barBreakHomeIns" class="h-full bg-sky-500 rounded-full transition-all duration-300" style="width: 5%"></div>
+                                    </div>
+                                </div>
+
+                                <!-- Maintenance & Repairs -->
+                                <div class="space-y-1">
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-slate-600 dark:text-slate-300 font-medium flex items-center gap-1.5">
+                                            <span class="w-2 h-2 rounded-full bg-teal-500"></span>
+                                            Maintenance &amp; Repairs Reserve
+                                        </span>
+                                        <span id="moBreakMaint" class="font-mono font-semibold text-slate-800 dark:text-slate-200">$467 / mo</span>
+                                    </div>
+                                    <div class="w-full h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                                        <div id="barBreakMaint" class="h-full bg-teal-500 rounded-full transition-all duration-300" style="width: 12%"></div>
+                                    </div>
+                                </div>
+
+                                <!-- PMI (Private Mortgage Insurance) -->
+                                <div class="space-y-1">
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-slate-600 dark:text-slate-300 font-medium flex items-center gap-1.5">
+                                            <span class="w-2 h-2 rounded-full bg-orange-500"></span>
+                                            PMI (Private Mortgage Insurance)
+                                            <span id="moBreakPmiNote" class="text-[10px] px-1.5 py-0.2 rounded bg-slate-200 dark:bg-slate-800 text-slate-500">None (≥20% Equity)</span>
+                                        </span>
+                                        <span id="moBreakPmi" class="font-mono font-semibold text-slate-800 dark:text-slate-200">$0 / mo</span>
+                                    </div>
+                                    <div class="w-full h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                                        <div id="barBreakPmi" class="h-full bg-orange-500 rounded-full transition-all duration-300" style="width: 0%"></div>
+                                    </div>
+                                </div>
+
+                                <!-- Less: Estimated Tax Deduction Benefit -->
+                                <div class="pt-2 border-t border-slate-200 dark:border-slate-800 flex justify-between items-center text-amber-600 dark:text-amber-400 font-semibold">
+                                    <span class="flex items-center gap-1.5">
+                                        <i class="ph-fill ph-sparkle"></i>
+                                        Less: Monthly Tax Deduction Shield
+                                    </span>
+                                    <span id="moBreakTaxShield" class="font-mono font-bold">-$223 / mo</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- CARD 2: RENT SCENARIO MONTHLY PAYMENT & CASH-FLOW DIFFERENCE -->
+                    <div class="rounded-2xl p-5 bg-indigo-500/[0.03] dark:bg-indigo-950/20 border border-indigo-500/25 flex flex-col justify-between">
+                        <div>
+                            <!-- Card Top Header -->
+                            <div class="flex items-start justify-between gap-2 pb-4 border-b border-indigo-500/15">
+                                <div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="w-3 h-3 rounded-full bg-indigo-500"></span>
+                                        <h4 class="text-sm font-bold uppercase tracking-wider text-indigo-700 dark:text-indigo-400">Rent Scenario Monthly Payment</h4>
+                                    </div>
+                                    <p id="rentCardSubLabel" class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Year 1 Monthly Rent &amp; Investing Breakdown</p>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-[11px] font-medium text-slate-500 dark:text-slate-400">Total Monthly Rent Outflow</div>
+                                    <div id="rentMonthlyTotal" class="text-2xl sm:text-3xl font-mono font-extrabold text-indigo-600 dark:text-indigo-400">$2,775<span class="text-xs font-normal text-slate-400">/mo</span></div>
+                                </div>
+                            </div>
+
+                            <!-- Monthly Cash-Flow Difference vs Buying Highlight Box -->
+                            <div id="rentDiffHighlightBox" class="my-4 p-3.5 rounded-xl bg-indigo-500/10 dark:bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-between">
+                                <div>
+                                    <div id="rentDiffTitle" class="text-xs font-bold text-indigo-800 dark:text-indigo-300 flex items-center gap-1.5">
+                                        <i class="ph-fill ph-piggy-bank text-indigo-500"></i>
+                                        Monthly Cash-Flow Savings vs. Buying
+                                    </div>
+                                    <div id="rentDiffSubtext" class="text-[11px] text-indigo-700/80 dark:text-indigo-300/80">
+                                        Auto-invested monthly into Renter's Portfolio at <span id="rentDiffReturnRate">7.5%</span>/yr
+                                    </div>
+                                </div>
+                                <div id="rentDiffMonthlyAmount" class="text-xl sm:text-2xl font-mono font-extrabold text-indigo-600 dark:text-indigo-400">
+                                    +$997<span class="text-xs font-normal">/mo</span>
+                                </div>
+                            </div>
+
+                            <!-- Itemized Rent Line-by-Line Breakdown -->
+                            <div class="space-y-3.5 text-xs">
+                                <!-- Base Monthly Rent -->
+                                <div class="p-3 rounded-xl bg-white/80 dark:bg-slate-900/90 border border-slate-200/80 dark:border-slate-800 space-y-2">
+                                    <div class="flex justify-between items-center font-semibold text-slate-800 dark:text-slate-100">
+                                        <span class="flex items-center gap-1.5">
+                                            <i class="ph-fill ph-buildings text-indigo-500"></i>
+                                            Base Monthly Rent
+                                            <span id="rentGrowthBadge" class="text-[10px] px-1.5 py-0.2 rounded bg-indigo-500/10 text-indigo-500 font-mono">+3.5%/yr</span>
+                                        </span>
+                                        <span id="moBreakBaseRent" class="font-mono font-bold text-sm">$2,750 / mo</span>
+                                    </div>
+                                    <div class="w-full h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                                        <div id="barBreakBaseRent" class="h-full bg-indigo-500 rounded-full transition-all duration-300" style="width: 98%"></div>
+                                    </div>
+                                </div>
+
+                                <!-- Renter's Insurance -->
+                                <div class="space-y-1">
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-slate-600 dark:text-slate-300 font-medium flex items-center gap-1.5">
+                                            <span class="w-2 h-2 rounded-full bg-sky-500"></span>
+                                            Renter's Insurance
+                                        </span>
+                                        <span id="moBreakRenterIns" class="font-mono font-semibold text-slate-800 dark:text-slate-200">$25 / mo</span>
+                                    </div>
+                                    <div class="w-full h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                                        <div id="barBreakRenterIns" class="h-full bg-sky-500 rounded-full transition-all duration-300" style="width: 2%"></div>
+                                    </div>
+                                </div>
+
+                                <!-- Side-by-Side Visual Monthly Cash Allocation Bar -->
+                                <div class="pt-3 border-t border-slate-200 dark:border-slate-800 space-y-2">
+                                    <div class="flex justify-between items-center text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                                        <span>Visual Monthly Outflow Comparison</span>
+                                        <span id="moComparisonRatioText" class="font-mono">Rent is 26% lower</span>
+                                    </div>
+
+                                    <!-- Buy Net Bar -->
+                                    <div class="space-y-1">
+                                        <div class="flex justify-between text-[11px]">
+                                            <span class="font-semibold text-emerald-600 dark:text-emerald-400">Buyer Net Monthly Cost</span>
+                                            <span id="visBuyNetMo" class="font-mono font-bold">$3,772/mo</span>
+                                        </div>
+                                        <div class="w-full h-3 rounded-lg bg-slate-200/70 dark:bg-slate-800 overflow-hidden flex">
+                                            <div id="visBuyEquityBar" class="h-full bg-emerald-500 transition-all duration-300" style="width: 15%" title="Principal (Equity)"></div>
+                                            <div id="visBuySunkBar" class="h-full bg-emerald-500/50 transition-all duration-300" style="width: 85%" title="Sunk Ownership Costs"></div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Rent Total + Invested Savings Bar -->
+                                    <div class="space-y-1">
+                                        <div class="flex justify-between text-[11px]">
+                                            <span class="font-semibold text-indigo-600 dark:text-indigo-400">Renter Monthly Cost + Auto-Invested Savings</span>
+                                            <span id="visRentPlusInvMo" class="font-mono font-bold">$2,775 Rent + $997 Invested</span>
+                                        </div>
+                                        <div class="w-full h-3 rounded-lg bg-slate-200/70 dark:bg-slate-800 overflow-hidden flex">
+                                            <div id="visRentCostBar" class="h-full bg-indigo-500 transition-all duration-300" style="width: 74%" title="Monthly Rent + Insurance"></div>
+                                            <div id="visRentInvestBar" class="h-full bg-sky-400/80 transition-all duration-300" style="width: 26%" title="Monthly Cash Savings Invested"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Bottom Summary Callout inside Rent Card -->
+                        <div class="mt-4 p-3 rounded-xl bg-white/70 dark:bg-slate-900/70 border border-slate-200/70 dark:border-slate-800 flex items-center justify-between text-xs">
+                            <span class="text-slate-500 dark:text-slate-400">Renter Portfolio Balance (<span id="rentCardPortfolioYrLabel">End of Yr 1</span>):</span>
+                            <span id="rentCardPortfolioVal" class="font-mono font-bold text-indigo-600 dark:text-indigo-400">$149,820</span>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- CHARTS GRID: CHART 1 (NET WEALTH), CHART 2 (MONTHLY PAYMENT TRAJECTORY), CHART 3 (SUNK COSTS) -->
+            <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
 
                 <!-- CHART 1: NET WORTH / CUMULATIVE WEALTH OVER TIME -->
                 <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col">
@@ -602,37 +918,58 @@
                         <div>
                             <h3 class="text-sm font-bold flex items-center gap-2">
                                 <i class="ph-fill ph-trend-up text-emerald-500"></i>
-                                Net Wealth Trajectory Over Time
+                                Net Wealth Trajectory
                             </h3>
-                            <p class="text-xs text-slate-500 dark:text-slate-400">Net liquidated home equity + side portfolio vs. Renter's investment portfolio</p>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">Net liquidated home equity vs. Renter portfolio</p>
                         </div>
-                        <div class="flex items-center gap-3 text-xs font-medium shrink-0">
-                            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>Buyer</span>
-                            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-indigo-500"></span>Renter</span>
+                        <div class="flex items-center gap-2.5 text-[11px] font-medium shrink-0">
+                            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>Buyer</span>
+                            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-indigo-500"></span>Renter</span>
                         </div>
                     </div>
-                    <div class="relative flex-1 min-h-[260px] w-full">
+                    <div class="relative flex-1 min-h-[250px] w-full">
                         <canvas id="wealthChartCanvas" class="w-full h-full block"></canvas>
                         <div id="wealthTooltip" class="hidden absolute pointer-events-none z-20 bg-slate-900/95 text-white p-3 rounded-xl border border-slate-700 shadow-xl text-xs font-mono"></div>
                     </div>
                 </div>
 
-                <!-- CHART 2: CUMULATIVE UNRECOVERABLE ("SUNK") COSTS -->
+                <!-- CHART 2: MONTHLY PAYMENT TRAJECTORY OVER TIME (BUY VS RENT) -->
+                <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col">
+                    <div class="flex items-start justify-between gap-2 mb-4">
+                        <div>
+                            <h3 class="text-sm font-bold flex items-center gap-2">
+                                <i class="ph-fill ph-calendar-check text-sky-500"></i>
+                                Monthly Payment Trajectory
+                            </h3>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">Net Monthly Buy Payment vs. rising Monthly Rent</p>
+                        </div>
+                        <div class="flex items-center gap-2.5 text-[11px] font-medium shrink-0">
+                            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>Buy/mo</span>
+                            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-indigo-500"></span>Rent/mo</span>
+                        </div>
+                    </div>
+                    <div class="relative flex-1 min-h-[250px] w-full">
+                        <canvas id="monthlyChartCanvas" class="w-full h-full block"></canvas>
+                        <div id="monthlyTooltip" class="hidden absolute pointer-events-none z-20 bg-slate-900/95 text-white p-3 rounded-xl border border-slate-700 shadow-xl text-xs font-mono"></div>
+                    </div>
+                </div>
+
+                <!-- CHART 3: CUMULATIVE UNRECOVERABLE ("SUNK") COSTS -->
                 <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col">
                     <div class="flex items-start justify-between gap-2 mb-4">
                         <div>
                             <h3 class="text-sm font-bold flex items-center gap-2">
                                 <i class="ph-fill ph-fire text-rose-500"></i>
-                                Cumulative Unrecoverable ("Sunk") Costs
+                                Cumulative "Sunk" Costs
                             </h3>
-                            <p class="text-xs text-slate-500 dark:text-slate-400">Interest, taxes, HOA, maintenance & closing minus tax shield vs. Rent paid</p>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">Interest, tax, HOA &amp; fees vs. Cumulative Rent</p>
                         </div>
-                        <div class="flex items-center gap-3 text-xs font-medium shrink-0">
-                            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>Buy Sunk</span>
-                            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-indigo-500"></span>Rent Sunk</span>
+                        <div class="flex items-center gap-2.5 text-[11px] font-medium shrink-0">
+                            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>Buy Sunk</span>
+                            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-indigo-500"></span>Rent Sunk</span>
                         </div>
                     </div>
-                    <div class="relative flex-1 min-h-[260px] w-full">
+                    <div class="relative flex-1 min-h-[250px] w-full">
                         <canvas id="sunkChartCanvas" class="w-full h-full block"></canvas>
                         <div id="sunkTooltip" class="hidden absolute pointer-events-none z-20 bg-slate-900/95 text-white p-3 rounded-xl border border-slate-700 shadow-xl text-xs font-mono"></div>
                     </div>
@@ -697,11 +1034,21 @@
                     <div>
                         <h3 class="text-sm font-bold flex items-center gap-2">
                             <i class="ph-fill ph-table text-emerald-500"></i>
-                            Year-by-Year Amortization, Tax Shield & Wealth Ledger
+                            Year-by-Year Monthly Payments, Amortization &amp; Wealth Ledger
                         </h3>
-                        <p class="text-xs text-slate-500 dark:text-slate-400">Click any year row to inspect detailed monthly P&I, HOA, tax itemization, and selling costs</p>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Click any year row to inspect itemized Principal, Interest, Property Tax, HOA, PMI, and Tax Shield</p>
                     </div>
-                    <div class="flex items-center gap-2">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <!-- Toggle between Monthly (/mo) and Annual (/yr) in expanded rows -->
+                        <div class="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold">
+                            <button id="tableModeMoBtn" onclick="setTablePeriodMode('mo')" class="px-2.5 py-1 rounded-lg transition bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm">
+                                Monthly (/mo)
+                            </button>
+                            <button id="tableModeYrBtn" onclick="setTablePeriodMode('yr')" class="px-2.5 py-1 rounded-lg transition text-slate-600 dark:text-slate-300">
+                                Annual (/yr)
+                            </button>
+                        </div>
+
                         <button onclick="exportCSV()" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 flex items-center gap-1.5 transition">
                             <i class="ph ph-download-simple"></i> Export CSV
                         </button>
@@ -713,12 +1060,12 @@
                         <thead>
                             <tr class="border-b border-slate-200 dark:border-slate-800 text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 bg-slate-50/70 dark:bg-slate-800/50">
                                 <th class="py-3 px-3">Year</th>
+                                <th class="py-3 px-3 text-right text-emerald-600 dark:text-emerald-400">Buy Gross/mo</th>
+                                <th class="py-3 px-3 text-right text-emerald-600 dark:text-emerald-400">Buy Net/mo</th>
+                                <th class="py-3 px-3 text-right text-indigo-600 dark:text-indigo-400">Rent/mo</th>
                                 <th class="py-3 px-3 text-right">Home Value</th>
                                 <th class="py-3 px-3 text-right">Loan Balance</th>
                                 <th class="py-3 px-3 text-right">Net Home Equity</th>
-                                <th class="py-3 px-3 text-right">Buy Outflow/Yr</th>
-                                <th class="py-3 px-3 text-right">Tax Shield</th>
-                                <th class="py-3 px-3 text-right">Rent Outflow/Yr</th>
                                 <th class="py-3 px-3 text-right">Renter Portfolio</th>
                                 <th class="py-3 px-3 text-right">Net Advantage</th>
                             </tr>
@@ -834,7 +1181,10 @@
 
         // Global state holding latest simulation results for charts & table
         let latestSim = null;
-        let expandedYears = new Set();
+        let expandedYears = new Set([1]); // Expand Year 1 by default so user sees itemized breakdown immediately
+        let monthlyInspectorMode = 'year1'; // 'year1' | 'custom' | 'avg'
+        let inspectedYear = 1;
+        let tablePeriodMode = 'mo'; // 'mo' | 'yr'
 
         // Formatters
         const fmtCurrency = (val) => {
@@ -1098,6 +1448,9 @@
                 let yrPrincipal = 0;
                 let yrPropTax = 0;
                 let yrHoa = 0;
+                let yrMaint = 0;
+                let yrHomeIns = 0;
+                let yrPmi = 0;
                 let yrMaintInsPmi = 0;
                 let yrRent = 0;
                 let yrRenterIns = 0;
@@ -1129,6 +1482,9 @@
                     yrPrincipal += mPrincipal;
                     yrPropTax += mPropTax;
                     yrHoa += yearHoaMo;
+                    yrMaint += mMaint;
+                    yrHomeIns += yearHomeInsMo;
+                    yrPmi += mPmi;
                     yrMaintInsPmi += (mMaint + yearHomeInsMo + mPmi);
                     yrRent += yearRentMo;
                     yrRenterIns += yearRenterInsMo;
@@ -1247,7 +1603,12 @@
                     yrPrincipal,
                     yrPropTax,
                     yrHoa,
+                    yrMaint,
+                    yrHomeIns,
+                    yrPmi,
                     yrMaintInsPmi,
+                    yrRent,
+                    yrRenterIns,
                     sellingRealtorFee,
                     netAdvantage: currAdv
                 });
@@ -1260,6 +1621,8 @@
                 buyClosingCosts,
                 initialBuyerUpfrontCash,
                 monthlyPI,
+                rentGrowth,
+                investReturn,
                 yearlyData,
                 breakevenYearExact,
                 totals: {
@@ -1276,10 +1639,226 @@
                 }
             };
 
+            // Keep inspectedYear within current horizon bounds
+            const inspectSlider = document.getElementById('inspectYearSlider');
+            if (inspectSlider) {
+                inspectSlider.max = horizonYears;
+                if (inspectedYear > horizonYears) {
+                    inspectedYear = horizonYears;
+                    inspectSlider.value = inspectedYear;
+                }
+            }
+
             updateDashboardUI();
+            updateMonthlyComparisonPanel();
             drawLineCharts();
             renderStackedBreakdown();
             renderAmortizationTable();
+        }
+
+        // ============================================================================
+        // DEDICATED MONTHLY PAYMENT COMPARISON PANEL (BUY VS. RENT)
+        // ============================================================================
+        function setMonthlyInspectorMode(mode) {
+            monthlyInspectorMode = mode;
+            if (mode === 'year1') {
+                inspectedYear = 1;
+                document.getElementById('inspectYearSlider').value = 1;
+            }
+            updateMonthlyInspectorButtons();
+            updateMonthlyComparisonPanel();
+        }
+
+        function handleInspectYearChange(val) {
+            inspectedYear = parseInt(val) || 1;
+            monthlyInspectorMode = (inspectedYear === 1) ? 'year1' : 'custom';
+            updateMonthlyInspectorButtons();
+            updateMonthlyComparisonPanel();
+        }
+
+        function updateMonthlyInspectorButtons() {
+            const btnY1 = document.getElementById('moModeYear1Btn');
+            const btnCustom = document.getElementById('moModeCustomBtn');
+            const btnAvg = document.getElementById('moModeAvgBtn');
+            const activeCls = 'px-2.5 py-1 rounded-md transition bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 shadow-sm';
+            const inactiveCls = 'px-2.5 py-1 rounded-md transition text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white';
+
+            btnY1.className = (monthlyInspectorMode === 'year1') ? activeCls : inactiveCls;
+            btnCustom.className = (monthlyInspectorMode === 'custom') ? activeCls : inactiveCls;
+            btnAvg.className = (monthlyInspectorMode === 'avg') ? activeCls : inactiveCls;
+
+            const yearWrap = document.getElementById('moYearSelectorWrap');
+            if (monthlyInspectorMode === 'avg') {
+                yearWrap.classList.add('opacity-40');
+                document.getElementById('inspectYearBadge').textContent = `1-${latestSim ? latestSim.horizonYears : 10}Yr Avg`;
+            } else {
+                yearWrap.classList.remove('opacity-40');
+                document.getElementById('inspectYearBadge').textContent = `Year ${inspectedYear}`;
+            }
+        }
+
+        function updateMonthlyComparisonPanel() {
+            if (!latestSim) return;
+            const { horizonYears, yearlyData, rentGrowth, investReturn } = latestSim;
+
+            let moPrincipal = 0, moInterest = 0, moPropTax = 0, moHoa = 0, moHomeIns = 0, moMaint = 0, moPmi = 0, moTaxShield = 0;
+            let moBaseRent = 0, moRenterIns = 0, portfolioAtPeriod = 0;
+            let periodLabel = '';
+            let portfolioLabel = '';
+
+            if (monthlyInspectorMode === 'avg') {
+                const totalMonths = horizonYears * 12;
+                const slices = yearlyData.slice(1);
+                moPrincipal = slices.reduce((s, d) => s + d.yrPrincipal, 0) / totalMonths;
+                moInterest = slices.reduce((s, d) => s + d.yrInterest, 0) / totalMonths;
+                moPropTax = slices.reduce((s, d) => s + d.yrPropTax, 0) / totalMonths;
+                moHoa = slices.reduce((s, d) => s + d.yrHoa, 0) / totalMonths;
+                moHomeIns = slices.reduce((s, d) => s + d.yrHomeIns, 0) / totalMonths;
+                moMaint = slices.reduce((s, d) => s + d.yrMaint, 0) / totalMonths;
+                moPmi = slices.reduce((s, d) => s + d.yrPmi, 0) / totalMonths;
+                moTaxShield = slices.reduce((s, d) => s + d.annualTaxSavings, 0) / totalMonths;
+
+                moBaseRent = slices.reduce((s, d) => s + d.yrRent, 0) / totalMonths;
+                moRenterIns = slices.reduce((s, d) => s + d.yrRenterIns, 0) / totalMonths;
+                portfolioAtPeriod = slices[slices.length - 1].renterTotalNetWealth;
+                periodLabel = `${horizonYears}-Year Timeline Monthly Average`;
+                portfolioLabel = `End of Yr ${horizonYears}`;
+            } else {
+                const yrIdx = Math.max(1, Math.min(horizonYears, inspectedYear));
+                const d = yearlyData[yrIdx];
+                moPrincipal = d.yrPrincipal / 12;
+                moInterest = d.yrInterest / 12;
+                moPropTax = d.yrPropTax / 12;
+                moHoa = d.yrHoa / 12;
+                moHomeIns = d.yrHomeIns / 12;
+                moMaint = d.yrMaint / 12;
+                moPmi = d.yrPmi / 12;
+                moTaxShield = d.annualTaxSavings / 12;
+
+                moBaseRent = d.yrRent / 12;
+                moRenterIns = d.yrRenterIns / 12;
+                portfolioAtPeriod = d.renterTotalNetWealth;
+                periodLabel = `Year ${yrIdx} Monthly Breakdown`;
+                portfolioLabel = `End of Yr ${yrIdx}`;
+            }
+
+            const moPI = moPrincipal + moInterest;
+            const buyGrossMo = moPI + moPropTax + moHoa + moHomeIns + moMaint + moPmi;
+            const buyNetMo = buyGrossMo - moTaxShield;
+            const rentTotalMo = moBaseRent + moRenterIns;
+            const cashFlowDiffMo = buyNetMo - rentTotalMo; // Positive means Buying is more expensive than Renting
+
+            // Update Top PMI status pill
+            const pmiTopBadge = document.getElementById('pmiActiveStatusBadge');
+            if (moPmi > 0.5) {
+                pmiTopBadge.classList.remove('hidden');
+                pmiTopBadge.textContent = `PMI Active: ${fmtCurrency(moPmi)}/mo`;
+            } else {
+                pmiTopBadge.classList.add('hidden');
+            }
+
+            // Update BUY Card Header & Totals
+            document.getElementById('buyCardSubLabel').textContent = periodLabel;
+            document.getElementById('buyGrossMonthlyTotal').innerHTML = `${fmtCurrency(buyGrossMo)}<span class="text-xs font-normal text-slate-400">/mo</span>`;
+            document.getElementById('buyNetMonthlyTotal').innerHTML = `${fmtCurrency(buyNetMo)}<span class="text-xs font-normal">/mo</span>`;
+            document.getElementById('buyEquityBuildMoText').textContent = `${fmtCurrency(moPrincipal)}/mo`;
+
+            // Update BUY Itemized Lines & Progress Bars
+            const denomBuy = Math.max(1, buyGrossMo);
+            document.getElementById('moBreakPI').textContent = `${fmtCurrency(moPI)} / mo`;
+            document.getElementById('moBreakPrincipal').textContent = `${fmtCurrency(moPrincipal)} / mo`;
+            document.getElementById('barBreakPrincipal').style.width = `${Math.min(100, (moPrincipal / denomBuy) * 100)}%`;
+
+            document.getElementById('moBreakInterest').textContent = `${fmtCurrency(moInterest)} / mo`;
+            document.getElementById('barBreakInterest').style.width = `${Math.min(100, (moInterest / denomBuy) * 100)}%`;
+
+            document.getElementById('moBreakPropTax').textContent = `${fmtCurrency(moPropTax)} / mo`;
+            document.getElementById('barBreakPropTax').style.width = `${Math.min(100, (moPropTax / denomBuy) * 100)}%`;
+
+            document.getElementById('moBreakHoa').textContent = `${fmtCurrency(moHoa)} / mo`;
+            document.getElementById('barBreakHoa').style.width = `${Math.min(100, (moHoa / denomBuy) * 100)}%`;
+
+            document.getElementById('moBreakHomeIns').textContent = `${fmtCurrency(moHomeIns)} / mo`;
+            document.getElementById('barBreakHomeIns').style.width = `${Math.min(100, (moHomeIns / denomBuy) * 100)}%`;
+
+            document.getElementById('moBreakMaint').textContent = `${fmtCurrency(moMaint)} / mo`;
+            document.getElementById('barBreakMaint').style.width = `${Math.min(100, (moMaint / denomBuy) * 100)}%`;
+
+            document.getElementById('moBreakPmi').textContent = `${fmtCurrency(moPmi)} / mo`;
+            document.getElementById('barBreakPmi').style.width = `${Math.min(100, (moPmi / denomBuy) * 100)}%`;
+            const pmiNoteEl = document.getElementById('moBreakPmiNote');
+            if (moPmi > 0.5) {
+                pmiNoteEl.textContent = 'LTV > 80%';
+                pmiNoteEl.className = 'text-[10px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-500 font-semibold';
+            } else {
+                pmiNoteEl.textContent = 'None (≥20% Equity)';
+                pmiNoteEl.className = 'text-[10px] px-1.5 py-0.2 rounded bg-slate-200 dark:bg-slate-800 text-slate-500';
+            }
+
+            document.getElementById('moBreakTaxShield').textContent = `-${fmtCurrency(moTaxShield)} / mo`;
+
+            // Update RENT Card Header & Totals
+            document.getElementById('rentCardSubLabel').textContent = periodLabel;
+            document.getElementById('rentMonthlyTotal').innerHTML = `${fmtCurrency(rentTotalMo)}<span class="text-xs font-normal text-slate-400">/mo</span>`;
+            document.getElementById('rentGrowthBadge').textContent = `+${(rentGrowth * 100).toFixed(1)}%/yr`;
+
+            const denomRent = Math.max(1, rentTotalMo);
+            document.getElementById('moBreakBaseRent').textContent = `${fmtCurrency(moBaseRent)} / mo`;
+            document.getElementById('barBreakBaseRent').style.width = `${Math.min(100, (moBaseRent / denomRent) * 100)}%`;
+
+            document.getElementById('moBreakRenterIns').textContent = `${fmtCurrency(moRenterIns)} / mo`;
+            document.getElementById('barBreakRenterIns').style.width = `${Math.min(100, (moRenterIns / denomRent) * 100)}%`;
+
+            // Monthly Cash Flow Difference Highlight Box
+            const diffBox = document.getElementById('rentDiffHighlightBox');
+            const diffTitle = document.getElementById('rentDiffTitle');
+            const diffSubtext = document.getElementById('rentDiffSubtext');
+            const diffAmount = document.getElementById('rentDiffMonthlyAmount');
+
+            if (cashFlowDiffMo >= 0) {
+                diffBox.className = 'my-4 p-3.5 rounded-xl bg-indigo-500/10 dark:bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-between';
+                diffTitle.className = 'text-xs font-bold text-indigo-800 dark:text-indigo-300 flex items-center gap-1.5';
+                diffTitle.innerHTML = `<i class="ph-fill ph-piggy-bank text-indigo-500"></i> Renter Monthly Cash-Flow Savings vs. Buying`;
+                diffSubtext.className = 'text-[11px] text-indigo-700/80 dark:text-indigo-300/80';
+                diffSubtext.textContent = `Renter saves ${fmtCurrency(cashFlowDiffMo)}/mo & auto-invests it at ${(investReturn * 100).toFixed(1)}%/yr`;
+                diffAmount.className = 'text-xl sm:text-2xl font-mono font-extrabold text-indigo-600 dark:text-indigo-400';
+                diffAmount.innerHTML = `+${fmtCurrency(cashFlowDiffMo)}<span class="text-xs font-normal">/mo</span>`;
+            } else {
+                const extraRentCost = Math.abs(cashFlowDiffMo);
+                diffBox.className = 'my-4 p-3.5 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-between';
+                diffTitle.className = 'text-xs font-bold text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5';
+                diffTitle.innerHTML = `<i class="ph-fill ph-trend-up text-emerald-500"></i> Buyer Monthly Cash-Flow Savings vs. Renting`;
+                diffSubtext.className = 'text-[11px] text-emerald-700/80 dark:text-emerald-300/80';
+                diffSubtext.textContent = `Renting costs ${fmtCurrency(extraRentCost)}/mo more; Buyer invests the savings`;
+                diffAmount.className = 'text-xl sm:text-2xl font-mono font-extrabold text-emerald-600 dark:text-emerald-400';
+                diffAmount.innerHTML = `-${fmtCurrency(extraRentCost)}<span class="text-xs font-normal">/mo</span>`;
+            }
+
+            // Visual Comparison Bar inside Rent Card
+            const maxMoBar = Math.max(buyNetMo, rentTotalMo, 1);
+            const eqPct = Math.max(0, Math.min(100, (moPrincipal / maxMoBar) * 100));
+            const sunkPct = Math.max(0, Math.min(100 - eqPct, ((buyNetMo - moPrincipal) / maxMoBar) * 100));
+            document.getElementById('visBuyNetMo').textContent = `${fmtCurrency(buyNetMo)}/mo (${fmtCurrency(moPrincipal)} Equity)`;
+            document.getElementById('visBuyEquityBar').style.width = `${eqPct}%`;
+            document.getElementById('visBuySunkBar').style.width = `${sunkPct}%`;
+
+            const rentBarPct = Math.max(0, Math.min(100, (rentTotalMo / maxMoBar) * 100));
+            const invBarPct = cashFlowDiffMo > 0 ? Math.max(0, Math.min(100 - rentBarPct, (cashFlowDiffMo / maxMoBar) * 100)) : 0;
+            document.getElementById('visRentCostBar').style.width = `${rentBarPct}%`;
+            document.getElementById('visRentInvestBar').style.width = `${invBarPct}%`;
+
+            if (cashFlowDiffMo >= 0) {
+                const lowerPct = Math.round((cashFlowDiffMo / Math.max(1, buyNetMo)) * 100);
+                document.getElementById('moComparisonRatioText').textContent = `Rent is ${lowerPct}% lower`;
+                document.getElementById('visRentPlusInvMo').textContent = `${fmtCurrency(rentTotalMo)} Rent + ${fmtCurrency(cashFlowDiffMo)} Invested`;
+            } else {
+                const higherPct = Math.round((Math.abs(cashFlowDiffMo) / Math.max(1, buyNetMo)) * 100);
+                document.getElementById('moComparisonRatioText').textContent = `Rent is ${higherPct}% higher`;
+                document.getElementById('visRentPlusInvMo').textContent = `${fmtCurrency(rentTotalMo)} Rent (Buyer invests +${fmtCurrency(Math.abs(cashFlowDiffMo))}/mo)`;
+            }
+
+            document.getElementById('rentCardPortfolioYrLabel').textContent = portfolioLabel;
+            document.getElementById('rentCardPortfolioVal').textContent = fmtCurrency(portfolioAtPeriod);
         }
 
         // ============================================================================
@@ -1350,12 +1929,13 @@
         }
 
         // ============================================================================
-        // INTERACTIVE CANVAS LINE CHARTS (NET WEALTH & SUNK COSTS)
+        // INTERACTIVE CANVAS LINE CHARTS (NET WEALTH, MONTHLY PAYMENTS & SUNK COSTS)
         // ============================================================================
         function drawLineCharts() {
             if (!latestSim) return;
             const { yearlyData } = latestSim;
 
+            // Chart 1: Net Wealth Trajectory (Years 0..N)
             renderDualLineChart(
                 'wealthChartCanvas',
                 'wealthTooltip',
@@ -1366,9 +1946,27 @@
                 'Renter Net Wealth',
                 '#10b981',
                 '#6366f1',
+                true,
+                false
+            );
+
+            // Chart 2: Monthly Payment Trajectory Over Time (Years 1..N)
+            const activeYears = yearlyData.slice(1);
+            renderDualLineChart(
+                'monthlyChartCanvas',
+                'monthlyTooltip',
+                activeYears.map(d => d.year),
+                activeYears.map(d => (d.annualBuyOutflow - d.annualTaxSavings) / 12),
+                activeYears.map(d => d.annualRentOutflow / 12),
+                'Net Buy / mo',
+                'Total Rent / mo',
+                '#10b981',
+                '#6366f1',
+                false,
                 true
             );
 
+            // Chart 3: Cumulative Sunk Costs (Years 0..N)
             renderDualLineChart(
                 'sunkChartCanvas',
                 'sunkTooltip',
@@ -1379,11 +1977,12 @@
                 'Renter Sunk Costs',
                 '#10b981',
                 '#6366f1',
+                false,
                 false
             );
         }
 
-        function renderDualLineChart(canvasId, tooltipId, years, seriesA, seriesB, labelA, labelB, colorA, colorB, showBreakevenDot) {
+        function renderDualLineChart(canvasId, tooltipId, years, seriesA, seriesB, labelA, labelB, colorA, colorB, showBreakevenDot, isMonthlyChart) {
             const canvas = document.getElementById(canvasId);
             const tooltip = document.getElementById(tooltipId);
             if (!canvas) return;
@@ -1545,15 +2144,16 @@
                 const valA = seriesA[idx];
                 const valB = seriesB[idx];
                 const diff = valA - valB;
+                const suffix = isMonthlyChart ? '/mo' : '';
 
                 tooltip.classList.remove('hidden');
                 tooltip.innerHTML = `
                     <div class="font-bold text-slate-200 border-b border-slate-700 pb-1 mb-1.5">Year ${years[idx]}</div>
-                    <div class="flex justify-between gap-4 text-emerald-400"><span>${labelA}:</span><span>${fmtCurrency(valA)}</span></div>
-                    <div class="flex justify-between gap-4 text-indigo-400"><span>${labelB}:</span><span>${fmtCurrency(valB)}</span></div>
+                    <div class="flex justify-between gap-4 text-emerald-400"><span>${labelA}:</span><span>${fmtCurrency(valA)}${suffix}</span></div>
+                    <div class="flex justify-between gap-4 text-indigo-400"><span>${labelB}:</span><span>${fmtCurrency(valB)}${suffix}</span></div>
                     <div class="flex justify-between gap-4 pt-1 mt-1 border-t border-slate-800 text-slate-300">
                         <span>Difference:</span>
-                        <span class="${diff >= 0 ? 'text-emerald-400' : 'text-indigo-400'} font-bold">${diff >= 0 ? '+' : ''}${fmtCurrency(diff)}</span>
+                        <span class="${diff >= 0 ? 'text-emerald-400' : 'text-indigo-400'} font-bold">${diff >= 0 ? '+' : ''}${fmtCurrency(diff)}${suffix}</span>
                     </div>
                 `;
 
@@ -1649,9 +2249,27 @@
         // ============================================================================
         // YEAR-BY-YEAR AMORTIZATION & WEALTH LEDGER TABLE
         // ============================================================================
+        function setTablePeriodMode(mode) {
+            tablePeriodMode = mode;
+            const moBtn = document.getElementById('tableModeMoBtn');
+            const yrBtn = document.getElementById('tableModeYrBtn');
+            const activeCls = 'px-2.5 py-1 rounded-lg transition bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm';
+            const inactiveCls = 'px-2.5 py-1 rounded-lg transition text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white';
+            moBtn.className = (mode === 'mo') ? activeCls : inactiveCls;
+            yrBtn.className = (mode === 'yr') ? activeCls : inactiveCls;
+            renderAmortizationTable();
+        }
+
         function toggleRowExpand(yr) {
             if (expandedYears.has(yr)) expandedYears.delete(yr);
             else expandedYears.add(yr);
+            // Also sync the top Monthly Payment Comparison panel to the clicked year
+            inspectedYear = yr;
+            monthlyInspectorMode = (yr === 1) ? 'year1' : 'custom';
+            const slider = document.getElementById('inspectYearSlider');
+            if (slider) slider.value = yr;
+            updateMonthlyInspectorButtons();
+            updateMonthlyComparisonPanel();
             renderAmortizationTable();
         }
 
@@ -1659,6 +2277,9 @@
             if (!latestSim) return;
             const tbody = document.getElementById('amortizationTableBody');
             const rowsHTML = [];
+            const isMo = (tablePeriodMode === 'mo');
+            const div = isMo ? 12 : 1;
+            const unitSuffix = isMo ? '/mo' : '/yr';
 
             // Start from Year 1 to N
             for (let i = 1; i < latestSim.yearlyData.length; i++) {
@@ -1666,18 +2287,22 @@
                 const isExpanded = expandedYears.has(d.year);
                 const advPositive = d.netAdvantage >= 0;
 
+                const buyGrossMo = d.annualBuyOutflow / 12;
+                const buyNetMo = (d.annualBuyOutflow - d.annualTaxSavings) / 12;
+                const rentMo = d.annualRentOutflow / 12;
+
                 rowsHTML.push(`
                     <tr onclick="toggleRowExpand(${d.year})" class="cursor-pointer hover:bg-slate-100/80 dark:hover:bg-slate-800/60 transition ${d.year === latestSim.horizonYears ? 'bg-emerald-500/5 dark:bg-emerald-500/10 font-semibold' : ''}">
                         <td class="py-2.5 px-3 flex items-center gap-1.5 font-sans font-semibold text-slate-800 dark:text-slate-200">
                             <i class="ph ${isExpanded ? 'ph-caret-down text-emerald-500' : 'ph-caret-right text-slate-400'}"></i>
                             Year ${d.year}
                         </td>
+                        <td class="py-2.5 px-3 text-right text-slate-700 dark:text-slate-300">${fmtCurrency(buyGrossMo)}<span class="text-[10px] text-slate-400">/mo</span></td>
+                        <td class="py-2.5 px-3 text-right text-emerald-600 dark:text-emerald-400 font-semibold">${fmtCurrency(buyNetMo)}<span class="text-[10px] opacity-75">/mo</span></td>
+                        <td class="py-2.5 px-3 text-right text-indigo-600 dark:text-indigo-400 font-semibold">${fmtCurrency(rentMo)}<span class="text-[10px] opacity-75">/mo</span></td>
                         <td class="py-2.5 px-3 text-right text-slate-700 dark:text-slate-300">${fmtCurrency(d.homeValue)}</td>
                         <td class="py-2.5 px-3 text-right text-slate-500 dark:text-slate-400">${fmtCurrency(d.loanBalance)}</td>
                         <td class="py-2.5 px-3 text-right text-emerald-600 dark:text-emerald-400 font-semibold">${fmtCurrency(d.netHomeEquity)}</td>
-                        <td class="py-2.5 px-3 text-right text-slate-700 dark:text-slate-300">${fmtCurrency(d.annualBuyOutflow)}</td>
-                        <td class="py-2.5 px-3 text-right text-amber-600 dark:text-amber-400">+${fmtCurrency(d.annualTaxSavings)}</td>
-                        <td class="py-2.5 px-3 text-right text-slate-700 dark:text-slate-300">${fmtCurrency(d.annualRentOutflow)}</td>
                         <td class="py-2.5 px-3 text-right text-indigo-600 dark:text-indigo-400 font-semibold">${fmtCurrency(d.renterTotalNetWealth)}</td>
                         <td class="py-2.5 px-3 text-right font-bold ${advPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-indigo-600 dark:text-indigo-400'}">
                             ${advPositive ? 'Buy +' : 'Rent +'}${fmtCurrency(Math.abs(d.netAdvantage))}
@@ -1689,26 +2314,34 @@
                     rowsHTML.push(`
                         <tr class="bg-slate-100/70 dark:bg-slate-800/40 text-[11px] font-sans">
                             <td colspan="9" class="p-3.5">
-                                <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3">
+                                <div class="flex items-center justify-between mb-2 text-xs">
+                                    <span class="font-bold text-slate-700 dark:text-slate-200">Year ${d.year} Itemized Breakdown (${isMo ? 'Monthly Averages' : 'Annual Totals'})</span>
+                                    <span class="font-mono text-slate-500">Annual Buy: ${fmtCurrency(d.annualBuyOutflow)} | Annual Rent: ${fmtCurrency(d.annualRentOutflow)}</span>
+                                </div>
+                                <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2.5">
                                     <div class="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-                                        <div class="text-slate-400">Principal Paid (Yr ${d.year})</div>
-                                        <div class="font-mono font-semibold text-emerald-500 mt-0.5">${fmtCurrency(d.yrPrincipal)}</div>
+                                        <div class="text-slate-400">Principal Paid</div>
+                                        <div class="font-mono font-semibold text-emerald-500 mt-0.5">${fmtCurrency(d.yrPrincipal / div)}${unitSuffix}</div>
                                     </div>
                                     <div class="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-                                        <div class="text-slate-400">Interest Paid (Yr ${d.year})</div>
-                                        <div class="font-mono font-semibold text-rose-500 mt-0.5">${fmtCurrency(d.yrInterest)}</div>
+                                        <div class="text-slate-400">Interest Paid</div>
+                                        <div class="font-mono font-semibold text-rose-500 mt-0.5">${fmtCurrency(d.yrInterest / div)}${unitSuffix}</div>
                                     </div>
                                     <div class="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-                                        <div class="text-slate-400">Property Tax + HOA</div>
-                                        <div class="font-mono font-semibold text-amber-500 mt-0.5">${fmtCurrency(d.yrPropTax + d.yrHoa)}</div>
+                                        <div class="text-slate-400">Prop Tax + HOA</div>
+                                        <div class="font-mono font-semibold text-amber-500 mt-0.5">${fmtCurrency((d.yrPropTax + d.yrHoa) / div)}${unitSuffix}</div>
                                     </div>
                                     <div class="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
                                         <div class="text-slate-400">Maint + Ins + PMI</div>
-                                        <div class="font-mono font-semibold text-sky-500 mt-0.5">${fmtCurrency(d.yrMaintInsPmi)}</div>
+                                        <div class="font-mono font-semibold text-sky-500 mt-0.5">${fmtCurrency(d.yrMaintInsPmi / div)}${unitSuffix}</div>
                                     </div>
                                     <div class="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-                                        <div class="text-slate-400">Buyer Side Portfolio</div>
-                                        <div class="font-mono font-semibold text-emerald-400 mt-0.5">${fmtCurrency(d.buyerSideNet)}</div>
+                                        <div class="text-slate-400">Tax Deduction Shield</div>
+                                        <div class="font-mono font-semibold text-amber-500 mt-0.5">-${fmtCurrency(d.annualTaxSavings / div)}${unitSuffix}</div>
+                                    </div>
+                                    <div class="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                                        <div class="text-slate-400">Base Rent + Ins</div>
+                                        <div class="font-mono font-semibold text-indigo-500 mt-0.5">${fmtCurrency(d.annualRentOutflow / div)}${unitSuffix}</div>
                                     </div>
                                     <div class="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
                                         <div class="text-slate-400">Est. Selling Fee</div>
@@ -1727,12 +2360,16 @@
         function exportCSV() {
             if (!latestSim) return;
             const headers = [
-                'Year', 'Home Value', 'Loan Balance', 'Net Home Equity', 'Buyer Side Portfolio',
+                'Year', 'Monthly Buy Gross ($/mo)', 'Monthly Buy Net After Tax ($/mo)', 'Monthly Rent Outflow ($/mo)',
+                'Home Value', 'Loan Balance', 'Net Home Equity', 'Buyer Side Portfolio',
                 'Buyer Total Net Wealth', 'Annual Ownership Outflow', 'Annual Tax Shield Savings',
                 'Annual Rent Outflow', 'Renter Portfolio Net Wealth', 'Net Wealth Advantage (Buy - Rent)'
             ];
             const rows = latestSim.yearlyData.slice(1).map(d => [
                 d.year,
+                Math.round(d.annualBuyOutflow / 12),
+                Math.round((d.annualBuyOutflow - d.annualTaxSavings) / 12),
+                Math.round(d.annualRentOutflow / 12),
                 Math.round(d.homeValue),
                 Math.round(d.loanBalance),
                 Math.round(d.netHomeEquity),
