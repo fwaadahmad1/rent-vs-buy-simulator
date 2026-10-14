@@ -1,6 +1,6 @@
 # 🏡 Rent vs. Buy Pro: Interactive Financial Simulator
 
-**Rent vs. Buy Pro** is a zero-dependency, single-file financial modeling web application that evaluates the true long-term wealth impact of buying a home versus renting and investing. 
+**Rent vs. Buy Pro** is a single-file financial modeling web application that evaluates the true long-term wealth impact of buying a home versus renting and investing. There is no build step and nothing to install — just open `index.html`.
 
 Unlike basic mortgage calculators that only compare monthly rent against monthly Principal & Interest (P&I), this engine models **monthly amortization schedules**, **incremental tax shields (Standard Deduction hurdles & SALT caps)**, **unrecoverable sunk costs**, **Private Mortgage Insurance (PMI)**, **realtor liquidation fees**, and the **compounded opportunity cost of capital** over a customizable 1-to-30-year timeline.
 
@@ -17,8 +17,10 @@ Unlike basic mortgage calculators that only compare monthly rent against monthly
   * **Net Wealth Trajectory Chart:** Scrub across years to compare Buyer vs. Renter net worth.
   * **Cumulative Sunk Costs Chart:** Compare total unrecoverable money spent over time.
   * **Cash Outflow vs. Retained Equity Bar:** Visual breakdown of every dollar spent across categories.
-* **📑 Expandable Amortization & Wealth Ledger:** Year-by-year table with clickable rows that expand to reveal granular annual principal, interest, tax shields, HOA/maintenance, and estimated selling fees, complete with one-click **CSV Export**.
-* **⚡ Instant Scenario Presets & Dark/Light Mode:** Switch between *Baseline 10-Yr*, *High-Cost Condo*, *Suburban Family*, and *High-Rate / Market Bull* presets, or toggle between Dark and Light themes.
+* **📑 Expandable Amortization & Wealth Ledger:** Year-by-year table with clickable rows that expand to reveal granular principal, interest, tax shields, HOA/maintenance, and estimated selling fees, complete with one-click **CSV Export**. Switch the table between annual totals and monthly averages.
+* **🔍 Monthly Cash-Flow Inspector:** Compares the buyer's and renter's monthly outlay side by side — for Year 1, any chosen year, or a full-timeline monthly average — with a per-line breakdown (P&I, property tax, HOA, maintenance, insurance, PMI and tax shield versus rent).
+* **💸 After-Tax Liquidation:** Both positions are liquidated at the horizon. Home appreciation above the IRS Section 121 exclusion ($250k Single / $500k Married) and investment gains above cost basis are taxed at a configurable long-term capital gains rate, so the verdict reflects money you could actually keep.
+* **⚡ Instant Scenario Presets & Dark/Light Mode:** Switch between *Baseline 10-Yr*, *High-Rate / Urban Condo*, *Suburban Family Home*, and *Aggressive Investor* presets, or toggle between Dark and Light themes.
 
 ---
 
@@ -90,6 +92,8 @@ Because the project is built as a self-contained single-file architecture, no No
    * **macOS:** `open index.html`
    * **Windows:** `start index.html`
    * **Linux:** `xdg-open index.html`
+
+> Styling and icons are loaded from CDNs (Tailwind, Phosphor Icons, Google Fonts), so an internet connection is needed for the page to render as intended.
 
 ### Hosting on GitHub Pages
 1. Push `index.html` and `README.md` to your GitHub repository's `main` branch.
